@@ -20,7 +20,8 @@ example structure
 2. implement the interface.py, with sqlalchemy
 3. battle for insert speed, query speed, database size
 
-# running
+# running a benchmark
+you'll have to change the paths for the docker compose & pytest file
 ```sh
 docker-compose -f src/example/docker-compose.yml down \
 && docker-compose -f src/example/docker-compose.yml up -d \
