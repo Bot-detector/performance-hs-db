@@ -58,7 +58,7 @@ class BenchMark(BenchmarkABC):
         with get_session() as session:
             result = session.execute(text(sql), params={"players": players})
             session.commit()
-        return result.fetchall()
+        return [r._mapping for r in result.fetchall()]
 
     def get_all_records_for_player(
         self,
@@ -68,7 +68,7 @@ class BenchMark(BenchmarkABC):
         with get_session() as session:
             result = session.execute(text(sql), params={"player_id": player_id})
             session.commit()
-        return result.fetchall()
+        return [r._mapping for r in result.fetchall()]
 
     def get_all_records_for_many_players(
         self,
@@ -78,4 +78,4 @@ class BenchMark(BenchmarkABC):
         with get_session() as session:
             result = session.execute(text(sql), params={"players": players})
             session.commit()
-        return result.fetchall()
+        return [r._mapping for r in result.fetchall()]
