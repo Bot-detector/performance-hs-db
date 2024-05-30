@@ -28,6 +28,7 @@ class BenchMark(BenchmarkABC):
 
         with get_session() as session:
             session.execute(text(sql_insert_highscore_data), params=params)
+            session.commit()
 
     def get_latest_record_for_player(
         self,
