@@ -1,10 +1,9 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
+
 
 @dataclass
-class HiscoreRecord:
-    scrape_date: datetime
-    player_id: int
+class SkillsRecord:
     attack: int = 0
     defence: int = 0
     strength: int = 0
@@ -28,6 +27,10 @@ class HiscoreRecord:
     runecraft: int = 0
     hunter: int = 0
     construction: int = 0
+
+
+@dataclass
+class ActivitiesRecord:
     league: int = 0
     bounty_hunter_hunter: int = 0
     bounty_hunter_rogue: int = 0
@@ -99,3 +102,12 @@ class HiscoreRecord:
     the_leviathan: int = 0
     the_whisperer: int = 0
     vardorvis: int = 0
+
+
+@dataclass
+class HiscoreRecord:
+    scrape_ts: datetime
+    scrape_date: date
+    player_id: int
+    skills: SkillsRecord = SkillsRecord()
+    activities: ActivitiesRecord = ActivitiesRecord()

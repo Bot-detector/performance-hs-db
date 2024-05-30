@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
+
 from . import HiscoreRecord
+
 
 class BenchmarkABC(ABC):
     @abstractmethod
@@ -26,7 +28,9 @@ class BenchmarkABC(ABC):
         pass
 
     @abstractmethod
-    def get_latest_record_for_many_players(self, players: list[int]) -> list[HiscoreRecord]:
+    def get_latest_record_for_many_players(
+        self, players: list[int]
+    ) -> list[HiscoreRecord]:
         """
         Retrieve the latest record for each of the specified players.
 
@@ -50,9 +54,11 @@ class BenchmarkABC(ABC):
             list[HiscoreRecord]: A list of all records for the specified player.
         """
         pass
-    
+
     @abstractmethod
-    def get_all_records_for_many_players(self, players: list[int]) -> list[HiscoreRecord]:
+    def get_all_records_for_many_players(
+        self, players: list[int]
+    ) -> list[HiscoreRecord]:
         """
         Retrieve all records for each of the specified players.
 
