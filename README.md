@@ -17,8 +17,11 @@ example structure
 │   │           └── 01_custom.sql
 ```
 1. copy the src/example to your desired contributions name `cp -r src/example src/<name>`
-2. implement the interface.py, with sqlalchemy
+2. create your schema in `src/<>/mysql/01_custom.sql`
+3. implement your schema with our interface `BenchmarkABC`
+    - please consider only using the sqlalchemy query builder or raw sql with parameters.
 3. battle for insert speed, query speed, database size
+
 
 # running a benchmark
 you'll have to change the paths for the docker compose & pytest file
