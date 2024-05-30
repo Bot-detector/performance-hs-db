@@ -22,7 +22,8 @@ example structure
 
 # running
 ```sh
-docker-compose -f src/example/docker-compose.yml up -d \
+docker-compose -f src/example/docker-compose.yml down \
+&& docker-compose -f src/example/docker-compose.yml up -d \
 && pytest -s tests/test_example.py \
 && docker-compose -f src/example/docker-compose.yml down
 ```
