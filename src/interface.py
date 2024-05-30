@@ -1,9 +1,25 @@
 from abc import ABC, abstractmethod
 
-from . import HiscoreRecord
+from sqlalchemy import text
+
+from . import HiscoreRecord, get_session
 
 
 class BenchmarkABC(ABC):
+    def get_size(self):
+        query = text(
+            """
+            SELECT table_name AS `Table`, 
+                ROUND(((data_length + index_length) / 1024 / 1024), 2) AS `Size (MB)` 
+            FROM information_schema.TABLES 
+            WHERE table_schema = :database
+        """
+        )
+        with get_session() as session:
+            result = session.execute(query, params={"database": "playerdata"})
+            data = result.fetchall()
+        return data
+
     @abstractmethod
     def insert_many_records(self, records: list[HiscoreRecord]) -> None:
         """

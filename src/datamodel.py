@@ -1,107 +1,130 @@
-from dataclasses import dataclass
+import random
+from dataclasses import dataclass, field
 from datetime import date, datetime
 
 
 @dataclass
 class SkillsRecord:
-    attack: int = 0
-    defence: int = 0
-    strength: int = 0
-    hitpoints: int = 0
-    ranged: int = 0
-    prayer: int = 0
-    magic: int = 0
-    cooking: int = 0
-    woodcutting: int = 0
-    fletching: int = 0
-    fishing: int = 0
-    firemaking: int = 0
-    crafting: int = 0
-    smithing: int = 0
-    mining: int = 0
-    herblore: int = 0
-    agility: int = 0
-    thieving: int = 0
-    slayer: int = 0
-    farming: int = 0
-    runecraft: int = 0
-    hunter: int = 0
-    construction: int = 0
+    attack: int = field(default_factory=lambda: random.randint(0, 200_000_000))
+    defence: int = field(default_factory=lambda: random.randint(0, 200_000_000))
+    strength: int = field(default_factory=lambda: random.randint(0, 200_000_000))
+    hitpoints: int = field(default_factory=lambda: random.randint(0, 200_000_000))
+    ranged: int = field(default_factory=lambda: random.randint(0, 200_000_000))
+    prayer: int = field(default_factory=lambda: random.randint(0, 200_000_000))
+    magic: int = field(default_factory=lambda: random.randint(0, 200_000_000))
+    cooking: int = field(default_factory=lambda: random.randint(0, 200_000_000))
+    woodcutting: int = field(default_factory=lambda: random.randint(0, 200_000_000))
+    fletching: int = field(default_factory=lambda: random.randint(0, 200_000_000))
+    fishing: int = field(default_factory=lambda: random.randint(0, 200_000_000))
+    firemaking: int = field(default_factory=lambda: random.randint(0, 200_000_000))
+    crafting: int = field(default_factory=lambda: random.randint(0, 200_000_000))
+    smithing: int = field(default_factory=lambda: random.randint(0, 200_000_000))
+    mining: int = field(default_factory=lambda: random.randint(0, 200_000_000))
+    herblore: int = field(default_factory=lambda: random.randint(0, 200_000_000))
+    agility: int = field(default_factory=lambda: random.randint(0, 200_000_000))
+    thieving: int = field(default_factory=lambda: random.randint(0, 200_000_000))
+    slayer: int = field(default_factory=lambda: random.randint(0, 200_000_000))
+    farming: int = field(default_factory=lambda: random.randint(0, 200_000_000))
+    runecraft: int = field(default_factory=lambda: random.randint(0, 200_000_000))
+    hunter: int = field(default_factory=lambda: random.randint(0, 200_000_000))
+    construction: int = field(default_factory=lambda: random.randint(0, 200_000_000))
 
 
 @dataclass
 class ActivitiesRecord:
-    league: int = 0
-    bounty_hunter_hunter: int = 0
-    bounty_hunter_rogue: int = 0
-    cs_all: int = 0
-    cs_beginner: int = 0
-    cs_easy: int = 0
-    cs_medium: int = 0
-    cs_hard: int = 0
-    cs_elite: int = 0
-    cs_master: int = 0
-    lms_rank: int = 0
-    soul_wars_zeal: int = 0
-    abyssal_sire: int = 0
-    alchemical_hydra: int = 0
-    barrows_chests: int = 0
-    bryophyta: int = 0
-    callisto: int = 0
-    cerberus: int = 0
-    chambers_of_xeric: int = 0
-    chambers_of_xeric_challenge_mode: int = 0
-    chaos_elemental: int = 0
-    chaos_fanatic: int = 0
-    commander_zilyana: int = 0
-    corporeal_beast: int = 0
-    crazy_archaeologist: int = 0
-    dagannoth_prime: int = 0
-    dagannoth_rex: int = 0
-    dagannoth_supreme: int = 0
-    deranged_archaeologist: int = 0
-    general_graardor: int = 0
-    giant_mole: int = 0
-    grotesque_guardians: int = 0
-    hespori: int = 0
-    kalphite_queen: int = 0
-    king_black_dragon: int = 0
-    kraken: int = 0
-    kreearra: int = 0
-    kril_tsutsaroth: int = 0
-    mimic: int = 0
-    nightmare: int = 0
-    nex: int = 0
-    phosanis_nightmare: int = 0
-    obor: int = 0
-    phantom_muspah: int = 0
-    sarachnis: int = 0
-    scorpia: int = 0
-    skotizo: int = 0
-    tempoross: int = 0
-    the_gauntlet: int = 0
-    the_corrupted_gauntlet: int = 0
-    theatre_of_blood: int = 0
-    theatre_of_blood_hard: int = 0
-    thermonuclear_smoke_devil: int = 0
-    tombs_of_amascut: int = 0
-    tombs_of_amascut_expert: int = 0
-    tzkal_zuk: int = 0
-    tztok_jad: int = 0
-    venenatis: int = 0
-    vetion: int = 0
-    vorkath: int = 0
-    wintertodt: int = 0
-    zalcano: int = 0
-    zulrah: int = 0
-    rifts_closed: int = 0
-    artio: int = 0
-    calvarion: int = 0
-    duke_sucellus: int = 0
-    spindel: int = 0
-    the_leviathan: int = 0
-    the_whisperer: int = 0
-    vardorvis: int = 0
+    league: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    bounty_hunter_hunter: int = field(
+        default_factory=lambda: random.randint(0, 1_000_000)
+    )
+    bounty_hunter_rogue: int = field(
+        default_factory=lambda: random.randint(0, 1_000_000)
+    )
+    cs_all: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    cs_beginner: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    cs_easy: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    cs_medium: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    cs_hard: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    cs_elite: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    cs_master: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    lms_rank: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    soul_wars_zeal: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    abyssal_sire: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    alchemical_hydra: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    barrows_chests: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    bryophyta: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    callisto: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    cerberus: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    chambers_of_xeric: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    chambers_of_xeric_challenge_mode: int = field(
+        default_factory=lambda: random.randint(0, 1_000_000)
+    )
+    chaos_elemental: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    chaos_fanatic: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    commander_zilyana: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    corporeal_beast: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    crazy_archaeologist: int = field(
+        default_factory=lambda: random.randint(0, 1_000_000)
+    )
+    dagannoth_prime: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    dagannoth_rex: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    dagannoth_supreme: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    deranged_archaeologist: int = field(
+        default_factory=lambda: random.randint(0, 1_000_000)
+    )
+    general_graardor: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    giant_mole: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    grotesque_guardians: int = field(
+        default_factory=lambda: random.randint(0, 1_000_000)
+    )
+    hespori: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    kalphite_queen: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    king_black_dragon: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    kraken: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    kreearra: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    kril_tsutsaroth: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    mimic: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    nightmare: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    nex: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    phosanis_nightmare: int = field(
+        default_factory=lambda: random.randint(0, 1_000_000)
+    )
+    obor: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    phantom_muspah: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    sarachnis: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    scorpia: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    skotizo: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    tempoross: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    the_gauntlet: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    the_corrupted_gauntlet: int = field(
+        default_factory=lambda: random.randint(0, 1_000_000)
+    )
+    theatre_of_blood: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    theatre_of_blood_hard: int = field(
+        default_factory=lambda: random.randint(0, 1_000_000)
+    )
+    thermonuclear_smoke_devil: int = field(
+        default_factory=lambda: random.randint(0, 1_000_000)
+    )
+    tombs_of_amascut: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    tombs_of_amascut_expert: int = field(
+        default_factory=lambda: random.randint(0, 1_000_000)
+    )
+    tzkal_zuk: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    tztok_jad: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    venenatis: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    vetion: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    vorkath: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    wintertodt: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    zalcano: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    zulrah: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    rifts_closed: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    artio: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    calvarion: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    duke_sucellus: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    spindel: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    the_leviathan: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    the_whisperer: int = field(default_factory=lambda: random.randint(0, 1_000_000))
+    vardorvis: int = field(default_factory=lambda: random.randint(0, 1_000_000))
 
 
 @dataclass

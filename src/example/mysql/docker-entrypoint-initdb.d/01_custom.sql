@@ -1,11 +1,9 @@
 -- Step 1: Create the table for HiscoreRecord
+USE playerdata;
 CREATE TABLE highscore_data (
-    id INT AUTO_INCREMENT PRIMARY KEY,
     scrape_ts DATETIME NOT NULL,
     scrape_date DATE NOT NULL,
     player_id INT NOT NULL,
-    skills_id INT,
-    activities_id INT,
     attack INT DEFAULT 0,
     defence INT DEFAULT 0,
     strength INT DEFAULT 0,
@@ -99,5 +97,8 @@ CREATE TABLE highscore_data (
     spindel INT DEFAULT 0,
     the_leviathan INT DEFAULT 0,
     the_whisperer INT DEFAULT 0,
-    vardorvis INT DEFAULT 0
-);
+    vardorvis INT DEFAULT 0,
+    PRIMARY KEY (player_id, scrape_date),
+    INDEX idx_scrape_ts (scrape_ts)
+)
+PARTITION BY HASH(player_id) PARTITIONS 10;

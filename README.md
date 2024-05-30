@@ -19,3 +19,10 @@ example structure
 1. copy the src/example to your desired contributions name `cp -r src/example src/<name>`
 2. implement the interface.py, with sqlalchemy
 3. battle for insert speed, query speed, database size
+
+# running
+```sh
+docker-compose -f src/example/docker-compose.yml up -d \
+&& pytest -s tests/test_example.py \
+&& docker-compose -f src/example/docker-compose.yml down
+```
