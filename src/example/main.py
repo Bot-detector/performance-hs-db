@@ -34,7 +34,11 @@ class BenchMark(BenchmarkABC):
         self,
         player_id: int,
     ) -> HiscoreRecord:
-        return super().get_latest_record_for_player(player_id)
+        sql = "select * from playerdata.highscore_data where player_id = :player_id order by scrape_date DESC LIMIT 1"
+        with get_session() as session:
+            result = session.execute(text(sql), params={"player_id": player_id})
+            session.commit()
+        return [r._mapping for r in result.fetchall()]
 
     def get_latest_record_for_many_players(
         self,

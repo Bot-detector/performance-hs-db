@@ -43,15 +43,16 @@ def create_batch(data: dict, batch_size: int) -> list[HiscoreRecord]:
     return batch
 
 
-def test_benchmark():
+def test_insert():
     bench = BenchMark()
     len_players = 100_000
 
     data = create_test_data(len_players=len_players)
     # inserting singles
 
+    total_records = 1_000_000
     batch_size = 100
-    for i in range(10_000):
+    for i in range(int(total_records / batch_size)):
         print(f"{i=}, inserted: {i*batch_size}, players left: {len(data)}")
         batch = create_batch(data=data, batch_size=batch_size)
 
@@ -60,7 +61,12 @@ def test_benchmark():
             break
 
     # easy bench :D
-    # table_sizes = bench.get_size()
+    table_sizes = bench.get_size()
     # # Sum up the sizes of all tables
-    # total_size_mb = sum(row[1] for row in table_sizes)
-    # print(total_size_mb, table_sizes)
+    total_size_mb = sum(row[1] for row in table_sizes)
+    print(total_size_mb, table_sizes)
+
+
+def test_get_latest_record_for_player():
+    bench = BenchMark()
+    bench.get_latest_record_for_player(player_id=29801)
