@@ -73,7 +73,7 @@ def test_insert():
     print(total_size_mb, table_sizes)
 
 
-def test_get_latest_record_for_player():
+def test_get_all_records_for_player():
     global players
     _players = list(players)
     random.shuffle(_players)
@@ -82,12 +82,36 @@ def test_get_latest_record_for_player():
     data = bench.get_all_records_for_player(player_id=_players[0])
     print("get_all_records_for_player", data[:: len(data) - 1])
     print("=" * 20)
+
+
+def test_get_latest_record_for_player():
+    global players
+    _players = list(players)
+    random.shuffle(_players)
+    bench = BenchMark()
+
     data = bench.get_latest_record_for_player(player_id=_players[0])
     print("get_latest_record_for_player", data)
     print("=" * 20)
+
+
+def test_get_all_records_for_many_players():
+    global players
+    _players = list(players)
+    random.shuffle(_players)
+    bench = BenchMark()
+
     data = bench.get_all_records_for_many_players(players=_players[:2])
     print("get_all_records_for_many_players", data[:: len(data) - 1])
     print("=" * 20)
+
+
+def test_get_latest_record_for_many_players():
+    global players
+    _players = list(players)
+    random.shuffle(_players)
+    bench = BenchMark()
+
     data = bench.get_latest_record_for_many_players(players=_players[:2])
     print("get_latest_record_for_many_players", data[:: len(data) - 1])
     print("=" * 20)
