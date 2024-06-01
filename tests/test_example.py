@@ -90,7 +90,7 @@ def test_get_all_records_for_player():
     bench = BenchMark()
 
     for i, player in enumerate(_players[:100]):
-        data = bench.get_all_records_for_player(player_id=player)
+        _ = bench.get_all_records_for_player(player_id=player)
         if i % 10 == 0:
             metrics.append(
                 {
@@ -112,7 +112,7 @@ def test_get_latest_record_for_player():
     bench = BenchMark()
 
     for i, player in enumerate(_players[:100]):
-        data = bench.get_latest_record_for_player(player_id=player)
+        _ = bench.get_latest_record_for_player(player_id=player)
         if i % 10 == 0:
             metrics.append(
                 {
@@ -138,7 +138,7 @@ def test_get_all_records_for_many_players():
         batch = _players[i : i + batch_size]
         if not batch:
             break
-        data = bench.get_all_records_for_many_players(players=batch)
+        _ = bench.get_all_records_for_many_players(players=batch)
         if i % 10 == 0:
             metrics.append(
                 {
@@ -164,7 +164,7 @@ def test_get_latest_record_for_many_players():
         batch = _players[i : i + batch_size]
         if not batch:
             break
-        data = bench.get_latest_record_for_many_players(players=batch)
+        _ = bench.get_latest_record_for_many_players(players=batch)
         if i % 10 == 0:
             metrics.append(
                 {
@@ -192,5 +192,10 @@ def write_list_of_dicts_to_jsonl(data, file_path):
 def test_write_to_file():
     global metrics
     _file = os.path.basename(__file__).replace(".py", "")
-    file_path = f"metrics/metrics_{_file}.jsonl"
+    # Get the current POSIX timestamp
+    ts = int(time.time())
+
+    # Set hours, minutes, and seconds to zero to get the start of the day timestamp
+    ts = ts - (ts % 86400)
+    file_path = f"metrics/{ts}_{_file}_metrics.jsonl"
     write_list_of_dicts_to_jsonl(metrics, file_path)
