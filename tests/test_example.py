@@ -7,13 +7,7 @@ from datetime import date, datetime, timedelta
 from src import HiscoreRecord
 from src.example.main import BenchMark
 
-metrics = {
-    "test_insert": [],
-    "test_get_all_records_for_player": [],
-    "test_get_latest_record_for_player": [],
-    "test_get_all_records_for_many_players": [],
-    "test_get_latest_record_for_many_players": [],
-}
+metrics = list()
 
 
 def create_test_data(len_players: int = 1_000_000):
@@ -73,7 +67,7 @@ def test_insert():
 
         if i % 10 == 0:
             print(f"{i=}, inserted: {i*batch_size}, players left: {len(data)}")
-            metrics["test_insert"].append((i, time.time()))
+            metrics.append({"metric": "test_insert", "count": i, "time": time.time()})
 
         for b in batch:
             players.add(b.player_id)
@@ -98,7 +92,13 @@ def test_get_all_records_for_player():
     for i, player in enumerate(_players[:100]):
         data = bench.get_all_records_for_player(player_id=player)
         if i % 10 == 0:
-            metrics["test_get_all_records_for_player"].append((i, time.time()))
+            metrics.append(
+                {
+                    "metric": "test_get_all_records_for_player",
+                    "count": i,
+                    "time": time.time(),
+                }
+            )
     # print("get_all_records_for_player", data[:: len(data) - 1])
     # print("=" * 20)
 
@@ -114,7 +114,13 @@ def test_get_latest_record_for_player():
     for i, player in enumerate(_players[:100]):
         data = bench.get_latest_record_for_player(player_id=player)
         if i % 10 == 0:
-            metrics["test_get_latest_record_for_player"].append((i, time.time()))
+            metrics.append(
+                {
+                    "metric": "test_get_latest_record_for_player",
+                    "count": i,
+                    "time": time.time(),
+                }
+            )
     # print("get_latest_record_for_player", data)
     # print("=" * 20)
 
@@ -134,7 +140,13 @@ def test_get_all_records_for_many_players():
             break
         data = bench.get_all_records_for_many_players(players=batch)
         if i % 10 == 0:
-            metrics["test_get_all_records_for_many_players"].append((i, time.time()))
+            metrics.append(
+                {
+                    "metric": "test_get_all_records_for_many_players",
+                    "count": i,
+                    "time": time.time(),
+                }
+            )
     # print("get_all_records_for_many_players", data[:: len(data) - 1])
     # print("=" * 20)
 
@@ -154,13 +166,31 @@ def test_get_latest_record_for_many_players():
             break
         data = bench.get_latest_record_for_many_players(players=batch)
         if i % 10 == 0:
-            metrics["test_get_latest_record_for_many_players"].append((i, time.time()))
+            metrics.append(
+                {
+                    "metric": "test_get_latest_record_for_many_players",
+                    "count": i,
+                    "time": time.time(),
+                }
+            )
     # print("get_latest_record_for_many_players", data[:: len(data) - 1])
     # print("=" * 20)
 
 
-def test_write_to_textfile():
+def write_list_of_dicts_to_jsonl(data, file_path):
+    """
+    Write a list of dictionaries to a file in JSON Lines (JSONL) format.
+
+    :param data: The list of dictionaries to write.
+    :param file_path: The path of the file to write to.
+    """
+    with open(file_path, "a") as file:
+        for dictionary in data:
+            file.write(json.dumps(dictionary) + "\n")
+
+
+def test_write_to_file():
     global metrics
     _file = os.path.basename(__file__).replace(".py", "")
-    with open(f"metrics/metrics_{_file}.json", "w") as file:
-        json.dump(metrics, file, indent=2)
+    file_path = f"metrics/metrics_{_file}.jsonl"
+    write_list_of_dicts_to_jsonl(metrics, file_path)
