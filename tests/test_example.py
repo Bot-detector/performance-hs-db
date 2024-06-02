@@ -1,13 +1,15 @@
+# from src.example.main import BenchMark
+import importlib
 import json
 import os
 import random
+import sys
 import time
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 from uuid import uuid4
 
-from src import HiscoreRecord
-from src.example.main import BenchMark
+from src import BenchmarkABC, HiscoreRecord
 
 
 @dataclass
@@ -49,7 +51,23 @@ class Metrics:
                 file.write(json.dumps(_metric) + "\n")
 
 
+module = importlib.import_module("src.example.main")
+BenchMark: BenchmarkABC = getattr(module, "BenchMark")
+# my_instance = my_class()
+
 metrics = Metrics(implementation="example")
+
+
+def batch_data(data: list, batch_size: int):
+    """
+    Generator to yield batches from a list of data.
+
+    :param data: List of input data
+    :param batch_size: Size of each batch
+    :yield: Batches of data
+    """
+    for i in range(0, len(data), batch_size):
+        yield data[i : i + batch_size]
 
 
 def create_test_data(len_players: int = 1_000_000):
@@ -62,28 +80,33 @@ def create_test_data(len_players: int = 1_000_000):
     }
 
 
-def create_batch(data: dict, batch_size: int) -> list[HiscoreRecord]:
-    players_in_batch = list(data.keys())
-    random.shuffle(players_in_batch)
-    players_in_batch = players_in_batch[:batch_size]
+def data_to_batch(
+    data: dict[str, list[datetime]], batch_size: int
+) -> list[HiscoreRecord]:
+    players = list(data.keys())
+    random.shuffle(players)
+    selected_players = players[:batch_size]
     batch = []
-    for pib in players_in_batch:
-        player = data.get(pib)
-        if not player:
-            data.pop(pib)
+
+    for player_id in selected_players:
+        records = data.get(player_id)
+        if not records:
+            data.pop(player_id, None)
             continue
-        earliest_record = player[-1]
-        data[pib].remove(earliest_record)
-        assert earliest_record not in data[pib]
+
+        earliest_record = records.pop(-1)
+
         batch.append(
             HiscoreRecord(
                 scrape_ts=earliest_record,
-                scrape_date=date.isoformat(earliest_record),
-                player_id=pib,
+                scrape_date=earliest_record.isoformat(),
+                player_id=player_id,
             )
         )
-        if data[pib] == []:
-            data.pop(pib)
+
+        if not records:
+            data.pop(player_id)
+
     return batch
 
 
@@ -102,8 +125,9 @@ def test_insert():
 
     total_records = 100_000
     batch_size = 100
+
     for i in range(int(total_records / batch_size)):
-        batch = create_batch(data=data, batch_size=batch_size)
+        batch = data_to_batch(data=data, batch_size=batch_size)
 
         bench.insert_many_records(records=batch)
 
