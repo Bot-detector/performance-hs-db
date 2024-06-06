@@ -1,61 +1,16 @@
 # from src.example.main import BenchMark
 import importlib
-import json
-import os
 import random
-import sys
-import time
-from dataclasses import dataclass, field
-from datetime import date, datetime, timedelta
-from uuid import uuid4
+from datetime import datetime, timedelta
 
 from src import BenchmarkABC, HiscoreRecord
 
-
-@dataclass
-class Metric:
-    key: str
-    value: int
-    _time: float
-    _id: str
-    _implementation: str
-
-
-@dataclass
-class Metrics:
-    implementation: str
-    metrics: list[Metric] = field(default_factory=list)
-    run_id: str = str(uuid4())
-
-    def add(self, key: str, value: int):
-        self.metrics.append(
-            Metric(
-                key=key,
-                value=value,
-                _time=time.time(),
-                _id=self.run_id,
-                _implementation=self.implementation,
-            )
-        )
-
-    def to_jsonl(self):
-        _metrics = [m.__dict__ for m in self.metrics]
-        _file = os.path.basename(__file__).replace(".py", "")
-        # Get the current POSIX timestamp
-        ts = int(time.time())
-        # Set hours, minutes, and seconds to zero to get the start of the day timestamp
-        ts = ts - (ts % 86400)
-        file_path = f"metrics/{ts}_{_file}_metrics.jsonl"
-        with open(file_path, "a") as file:
-            for _metric in _metrics:
-                file.write(json.dumps(_metric) + "\n")
-
+from .metrics import Metrics
 
 module = importlib.import_module("src.example.main")
 BenchMark: BenchmarkABC = getattr(module, "BenchMark")
-# my_instance = my_class()
-
 metrics = Metrics(implementation="example")
+players = set()
 
 
 def batch_data(data: list, batch_size: int):
@@ -110,12 +65,10 @@ def data_to_batch(
     return batch
 
 
-players = set()
-
-
 def test_insert():
     global players
     global metrics
+    global BenchMark
 
     bench = BenchMark()
     len_players = 10_000
@@ -140,16 +93,11 @@ def test_insert():
         if len(data) == 0:
             break
 
-    # easy bench :D
-    table_sizes = bench.get_size()
-    # Sum up the sizes of all tables
-    total_size_mb = sum(row[1] for row in table_sizes)
-    print(total_size_mb, table_sizes)
-
 
 def test_get_all_records_for_player():
     global players
     global metrics
+    global BenchMark
 
     _players = list(players)
     random.shuffle(_players)
@@ -165,6 +113,7 @@ def test_get_all_records_for_player():
 def test_get_latest_record_for_player():
     global players
     global metrics
+    global BenchMark
 
     _players = list(players)
     random.shuffle(_players)
@@ -180,6 +129,7 @@ def test_get_latest_record_for_player():
 def test_get_all_records_for_many_players():
     global players
     global metrics
+    global BenchMark
 
     _players = list(players)
     random.shuffle(_players)
@@ -199,6 +149,7 @@ def test_get_all_records_for_many_players():
 def test_get_latest_record_for_many_players():
     global players
     global metrics
+    global BenchMark
 
     _players = list(players)
     random.shuffle(_players)
@@ -218,4 +169,4 @@ def test_get_latest_record_for_many_players():
 def test_write_to_file():
     global metrics
 
-    metrics.to_jsonl()
+    metrics.to_jsonl(file=__file__)

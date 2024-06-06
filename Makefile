@@ -32,11 +32,12 @@ clean-test: ## cleanup pytests leftovers
 	rm -f output.xml
 
 docker-restart: ## restart containers
-	docker compose down
-	docker compose up --build -d
+	@echo "Enter implementation name:" && read implementation && \
+	docker compose -f src/$$implementation/docker-compose.yml down && \
+	docker compose -f src/$$implementation/docker-compose.yml up -d
 
 docker-test: docker-restart ## restart containers & test
-	pytest -s
+	pytest -s tests/
 
 pre-commit-setup: ## Install pre-commit
 	python3 -m pip install pre-commit

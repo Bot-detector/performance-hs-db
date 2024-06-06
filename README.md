@@ -74,11 +74,14 @@ example structure
 3. battle for insert speed, query speed, database size
 
 
+# running your database
+you'll have to change the paths for the docker compose & pytest file
+```sh
+make docker-restart
+```
+
 # running a benchmark
 you'll have to change the paths for the docker compose & pytest file
 ```sh
-docker compose -f src/example/docker-compose.yml down \
-&& docker compose -f src/example/docker-compose.yml up -d \
-&& pytest -s tests/test_example.py \
-&& docker compose -f src/example/docker-compose.yml down
+make docker-test
 ```

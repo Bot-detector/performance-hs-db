@@ -132,5 +132,5 @@ class HiscoreRecord:
     scrape_ts: datetime
     scrape_date: date
     player_id: int
-    skills: SkillsRecord = SkillsRecord()
-    activities: ActivitiesRecord = ActivitiesRecord()
+    skills: SkillsRecord = field(default_factory=lambda: SkillsRecord())
+    activities: ActivitiesRecord = field(default_factory=lambda: ActivitiesRecord())
