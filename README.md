@@ -75,13 +75,18 @@ example structure
 
 
 # running your database
-you'll have to change the paths for the docker compose & pytest file
+this will first remove any running database if you had one, than spin up a new database
 ```sh
 make docker-restart
 ```
 
-# running a benchmark
-you'll have to change the paths for the docker compose & pytest file
+## testing your database
+this will first remove any running database if you had one, than spin up a new database, to finally run `pytest -s tests/`
 ```sh
 make docker-test
+```
+# running a benchmark
+this will first remove any running database if you had one, than spin up a new database, to finally run `python3 performance_test/main.py`
+```sh
+make docker-benchmark
 ```

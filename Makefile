@@ -38,6 +38,9 @@ docker-restart: ## restart containers
 
 docker-test: docker-restart ## restart containers & test
 	pytest -s tests/
+	
+docker-benchmark: docker-restart
+	python3 performance_test/main.py
 
 pre-commit-setup: ## Install pre-commit
 	python3 -m pip install pre-commit
