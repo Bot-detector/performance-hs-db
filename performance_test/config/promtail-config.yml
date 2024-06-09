@@ -9,25 +9,27 @@ clients:
   - url: http://loki:3100/loki/api/v1/push
 
 scrape_configs:
-  - job_name: highscore-db-performance
-    pipeline_stages:
-      - json:
-          expressions:
-            key:
-            value:
-            _time:
-            _id:
-            _implementation:
-      - labels:
-          key:
-          _id:
-          _implementation:
-      - timestamp:
-          source: _time
-          format: Unix
+  - job_name: jsonl-logs
     static_configs:
       - targets:
           - localhost
         labels:
-          job: ccglogprd
-          __path__: /var/log/*
+          job: jsonl-logs
+          __path__: /var/log/*.jsonl
+    pipeline_stages:
+      - json:
+          expressions:
+            key: key
+            value: value
+            time: _time
+            id: _id
+            implementation: _implementation
+
+      - timestamp:
+          source: time
+          format: Unix
+
+      - labels:
+          key: key
+          id: id
+          implementation: implementation
