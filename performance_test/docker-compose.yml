@@ -1,0 +1,42 @@
+
+
+services:
+  loki:
+    image: grafana/loki:2.4.1
+    ports:
+      - 3100:3100
+    volumes:
+      - ./metrics:/var/log
+      - ./config:/mnt/config
+    command: "-config.file=/mnt/config/loki-config.yml"
+    networks:
+      - loki
+
+  promtail:
+    image: grafana/promtail:2.4.1
+    volumes:
+      - ./metrics:/var/log
+      - ./config:/mnt/config
+    command: "-config.file=/mnt/config/promtail-config.yml"
+    ports:
+      - "9080:9080"
+    networks:
+      - loki
+
+  grafana:
+    image: grafana/grafana-enterprise
+    container_name: grafana
+    restart: unless-stopped
+    # if you are running as root then set it to 0
+    # else find the right id with the id -u command
+    user: '0'
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./grafana-storage:/var/lib/grafana:rw
+    networks:
+      - loki
+# volumes:
+#   grafana-storage: {}
+networks:
+  loki:
