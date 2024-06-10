@@ -1,0 +1,25 @@
+services:
+  mysql:
+    container_name: database
+    build:
+      context: ./mysql
+    image: mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_bot_buster
+    volumes:
+      - ./mysql/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+      - ./mysql/conf.d:/etc/mysql/conf.d
+    ports:
+      - 3333:3306
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_bot_buster"]
+      start_period: 30s
+      interval: 30s
+      timeout: 5s
+
+  dummy:
+    container_name: dummy
+    image: alpine
+    depends_on:
+      mysql:
+        condition: service_healthy
