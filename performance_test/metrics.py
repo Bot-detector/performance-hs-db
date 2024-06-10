@@ -38,7 +38,7 @@ class Metrics:
         ts = int(time.time())
         # Set hours, minutes, and seconds to zero to get the start of the day timestamp
         ts = ts - (ts % 86400)
-        file_path = f"metrics/{ts}_{_file}_metrics.jsonl"
+        file_path = f"performance_test/metrics/{ts}_{_file}_metrics.jsonl"
         with open(file_path, "a") as file:
             for _metric in _metrics:
                 file.write(json.dumps(_metric) + "\n")

@@ -42,6 +42,10 @@ docker-test: docker-restart ## restart containers & test
 docker-benchmark: docker-restart
 	python3 performance_test/main.py
 
+docker-grafana:
+	docker compose -f performance_test/docker-compose.yml down
+	docker compose -f performance_test/docker-compose.yml up -d --build
+
 pre-commit-setup: ## Install pre-commit
 	python3 -m pip install pre-commit
 	pre-commit --version
