@@ -30,7 +30,7 @@ class BenchMark(BenchmarkABC):
                 'scrape_date': record.scrape_date,
                 'player_id': record.player_id,
                 'skills': record.get_skills(),
-                'activities': record.get_activities()
+                'activities': record.get_activities() # fixed
             }
             records_to_insert.append(record_data)
 
