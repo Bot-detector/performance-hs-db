@@ -30,6 +30,16 @@ class SkillsRecord:
     hunter: int = field(default_factory=lambda: random.randint(0, 200_000_000))
     construction: int = field(default_factory=lambda: random.randint(0, 200_000_000))
 
+    def set_all_except_random_to_zero(self):
+        # Get all field names
+        fields = [f for f in self.__dataclass_fields__]
+        # Select 5 random fields to keep their value
+        fields_to_keep = random.sample(fields, 11)
+        # Set all other fields to 0
+        for field in fields:
+            if field not in fields_to_keep:
+                setattr(self, field, 0)
+
 
 @dataclass
 class ActivitiesRecord:
@@ -127,6 +137,16 @@ class ActivitiesRecord:
     the_whisperer: int = field(default_factory=lambda: random.randint(0, 1_000_000))
     vardorvis: int = field(default_factory=lambda: random.randint(0, 1_000_000))
 
+    def set_all_except_random_to_zero(self):
+        # Get all field names
+        fields = [f for f in self.__dataclass_fields__]
+        # Select 5 random fields to keep their value
+        fields_to_keep = random.sample(fields, 6)
+        # Set all other fields to 0
+        for field in fields:
+            if field not in fields_to_keep:
+                setattr(self, field, 0)
+
 
 default_skills = SkillsRecord(
     attack=0, defence=0, strength=0, hitpoints=0, ranged=0, prayer=0, magic=0,
@@ -167,6 +187,14 @@ class HiscoreRecord:
 
         if self.activities is None or isinstance(self.activities, dict):
             self.activities = self.load_activities(self.activities)
+
+    def reduce_skills_and_activities(self):
+        """
+        Reduces the amount of skills and activities trained & gained.
+        The values set are in proportion to the mean values for 7 million + Live players on OSRS
+        """
+        self.skills.set_all_except_random_to_zero()
+        self.activities.set_all_except_random_to_zero()
 
     def get_skills(self):
         skills = asdict(self.skills)

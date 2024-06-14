@@ -25,13 +25,14 @@ class BenchMark(BenchmarkABC):
         records_to_insert = []
 
         for record in records:
-            records_to_insert.append({
+            record_data = {
                 'scrape_ts': record.scrape_ts,
                 'scrape_date': record.scrape_date,
                 'player_id': record.player_id,
                 'skills': record.get_skills(),
-                'minigames': record.get_activities()
-            })
+                'activities': record.get_activities()
+            }
+            records_to_insert.append(record_data)
 
         with get_session() as session:
             session.execute(insert(highscore_data), records_to_insert)

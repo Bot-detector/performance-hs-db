@@ -50,12 +50,14 @@ def batch_data(data: dict[str, list[datetime]], batch_size: int) -> list[Hiscore
 
         earliest_record = records.pop(-1)
 
-        batch.append(
-            HiscoreRecord(
+        record = HiscoreRecord(
                 scrape_ts=earliest_record,
                 scrape_date=earliest_record.isoformat(),
                 player_id=player_id,
             )
+        record.reduce_skills_and_activities()
+        batch.append(
+            record
         )
 
         if not records:
