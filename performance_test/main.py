@@ -9,7 +9,12 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 
 from performance_test.metrics import Metrics  # noqa: E402
-from src import BenchmarkABC, HiscoreRecord  # noqa: E402
+from src import (  # noqa: E402
+    ActivitiesRecord,
+    BenchmarkABC,
+    HiscoreRecord,
+    SkillsRecord,
+)
 
 players = set()
 
@@ -50,15 +55,20 @@ def batch_data(data: dict[str, list[datetime]], batch_size: int) -> list[Hiscore
 
         earliest_record = records.pop(-1)
 
+        skills = SkillsRecord()
+        skills.random()
+
+        activities = ActivitiesRecord()
+        activities.random()
+
         record = HiscoreRecord(
-                scrape_ts=earliest_record,
-                scrape_date=earliest_record.isoformat(),
-                player_id=player_id,
-            )
-        record.reduce_skills_and_activities()
-        batch.append(
-            record
+            scrape_ts=earliest_record,
+            scrape_date=earliest_record.isoformat(),
+            player_id=player_id,
+            skills=skills,
+            activities=activities,
         )
+        batch.append(record)
 
         if not records:
             data.pop(player_id)
@@ -197,7 +207,7 @@ def metrics_to_file(metrics: Metrics):
 
 if __name__ == "__main__":
     LEN_PLAYERS = 100_000
-    implementation = input("implementation: ")
+    implementation = input("implementation: ") # TODO: take argument
     metrics = Metrics(implementation=implementation)
     module = importlib.import_module(f"src.{implementation}.main")
     benchmark: BenchmarkABC = getattr(module, "BenchMark")
@@ -205,51 +215,17 @@ if __name__ == "__main__":
 
     data = create_test_data(len_players=LEN_PLAYERS)
     players = set()
-    players = insert_data(
-        bench=benchmark,
-        metrics=metrics,
-        data=data,
-        batch_size=100_000,
-        iterations=1,
-        players=players,
-    )
-    print(f"{len(players)=}")
-    players = insert_data(
-        bench=benchmark,
-        metrics=metrics,
-        data=data,
-        batch_size=10,
-        iterations=100,
-        players=players,
-    )
-    print(f"{len(players)=}")
-    players = insert_data(
-        bench=benchmark,
-        metrics=metrics,
-        data=data,
-        batch_size=100,
-        iterations=100,
-        players=players,
-    )
-    print(f"{len(players)=}")
-    players = insert_data(
-        bench=benchmark,
-        metrics=metrics,
-        data=data,
-        batch_size=1_000,
-        iterations=100,
-        players=players,
-    )
-    print(f"{len(players)=}")
-    players = insert_data(
-        bench=benchmark,
-        metrics=metrics,
-        data=data,
-        batch_size=10_000,
-        iterations=10,
-        players=players,
-    )
-    print(f"{len(players)=}")
+    batches = [(100_000, 1), (10, 10_000), (100, 1000), (1_000, 100), (10_000, 10)]
+    for batch_size, iterations in batches:
+        print(f"{len(players)=}, {batch_size=}, {iterations=}")
+        players = insert_data(
+            bench=benchmark,
+            metrics=metrics,
+            data=data,
+            batch_size=batch_size,
+            iterations=iterations,
+            players=players,
+        )
 
     get_total_size(bench=benchmark, metrics=metrics)
     get_all_records(

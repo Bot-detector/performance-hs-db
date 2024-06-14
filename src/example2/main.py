@@ -1,36 +1,56 @@
-from sqlalchemy import text
-import json
 from dataclasses import asdict
 
-from .. import BenchmarkABC, HiscoreRecord, get_session
+from sqlalchemy import (
+    JSON,
+    Column,
+    Date,
+    DateTime,
+    Integer,
+    MetaData,
+    Table,
+    insert,
+    text,
+)
 
-from sqlalchemy import create_engine, Table, MetaData, Column, Integer, DateTime, JSON, Date, insert
+from .. import ActivitiesRecord, BenchmarkABC, HiscoreRecord, SkillsRecord, get_session
 
 # Define the table structure
 metadata = MetaData()
 
 highscore_data = Table(
-    'highscore_data', metadata,
-    Column('scrape_ts', DateTime, nullable=False),
-    Column('scrape_date', Date, nullable=False),
-    Column('player_id', Integer, nullable=False),
-    Column('skills', JSON, nullable=True),
-    Column('activities', JSON, nullable=True),
-    primary_key=('player_id', 'scrape_date'),
-    extend_existing=True
+    "highscore_data",
+    metadata,
+    Column("scrape_ts", DateTime, nullable=False),
+    Column("scrape_date", Date, nullable=False),
+    Column("player_id", Integer, nullable=False),
+    Column("skills", JSON, nullable=True),
+    Column("activities", JSON, nullable=True),
+    primary_key=("player_id", "scrape_date"),
+    extend_existing=True,
 )
+
 
 class BenchMark(BenchmarkABC):
     def insert_many_records(self, records: list[HiscoreRecord]) -> None:
         records_to_insert = []
 
         for record in records:
+            record_dict = record.__dict__
+
+            skills: SkillsRecord = record_dict.pop("skills")
+            skills: dict = asdict(skills)
+            skills = {k: v for k, v in skills.items() if v}
+
+            activities: ActivitiesRecord = record_dict.pop("activities")
+            activities: dict = asdict(activities)
+            activities = {k: v for k, v in activities.items() if v}
+
             record_data = {
-                'scrape_ts': record.scrape_ts,
-                'scrape_date': record.scrape_date,
-                'player_id': record.player_id,
-                'skills': record.get_skills(),
-                'activities': record.get_activities()
+                "scrape_ts": record.scrape_ts,
+                "scrape_date": record.scrape_date,
+                "player_id": record.player_id,
+                "skills": skills,
+                "activities": activities,
             }
             records_to_insert.append(record_data)
 
