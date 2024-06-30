@@ -1,10 +1,15 @@
+# import logging
 from dataclasses import asdict, dataclass
 from datetime import date, datetime
 
 import sqlalchemy as sqla
 from sqlalchemy.orm import Session
 
-from .. import ActivitiesRecord, BenchmarkABC, HiscoreRecord, SkillsRecord, get_session
+from .. import BenchmarkABC, HiscoreRecord, get_session
+
+# from .. import ActivitiesRecord, BenchmarkABC, HiscoreRecord, SkillsRecord, get_session
+
+# logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -38,7 +43,7 @@ class ScraperSkill:
 @dataclass
 class ScraperActivity:
     scrape_id: int
-    player_acivity_id: int
+    player_activity_id: int
 
 
 @dataclass
@@ -89,8 +94,8 @@ def insert_scraper_player_skill(session: Session, data: list[ScraperSkill]):
         insert into scraper_player_skills (scrape_id, player_skill_id)
         values (:scrape_id, :player_skill_id)
         on duplicate key update
-            scrape_id = new.scrape_id
-            player_skill_id = new.player_skill_id
+            scrape_id = values(scrape_id),
+            player_skill_id = values(player_skill_id)
         """
     session.execute(sqla.text(sql), [asdict(d) for d in data if d])
     return
@@ -101,8 +106,8 @@ def insert_scraper_player_activity(session: Session, data: list[ScraperSkill]):
         insert into scraper_player_activities (scrape_id, player_activity_id)
         values (:scrape_id, :player_activity_id)
         on duplicate key update
-            scrape_id = new.scrape_id
-            player_activity_id = new.player_activity_id
+            scrape_id = values(scrape_id),
+            player_activity_id = values(player_activity_id)
         """
     session.execute(sqla.text(sql), [asdict(d) for d in data if d])
     return
@@ -298,28 +303,43 @@ class BenchMark(BenchmarkABC):
             for sr in scraper_records:
                 # create list of scraper_player_activity
                 # create list of scraper_player_skill
-                scrape_id = select_scraper_data(session=session, data=sr.scaper_data)
+                scrape_id = select_scraper_data(session=session, data=sr.scaper_data)[0]
+
                 # select player_activity, player_skill, scraper_data
                 scraper_activity = [
                     ScraperActivity(
                         scrape_id=scrape_id,
                         player_activity_id=select_player_activity(
-                            session=session, data=pa
-                        ),
+                            session=session,
+                            data=pa,
+                        )[0],
                     )
                     for pa in sr.player_activities
+                    if pa
                 ]
                 scraper_skill = [
                     ScraperSkill(
                         scrape_id=scrape_id,
-                        player_skill_id=select_player_skill(session=session, data=ps),
+                        player_skill_id=select_player_skill(
+                            session=session,
+                            data=ps,
+                        )[0],
                     )
                     for ps in sr.player_skills
+                    if ps
                 ]
+            print(f"{len(scraper_activity)=}")
+            print(f"{len(scraper_skill)=}")
+
+            [print(f"{sa=}") for sa in scraper_activity if not sa.scrape_id]
+            [print(f"{ss=}") for ss in scraper_skill if not ss.scrape_id]
+
             # insert scraper_player_activity
-            insert_scraper_player_activity(session=session, data=scraper_activity)
+            if scraper_activity:
+                insert_scraper_player_activity(session=session, data=scraper_activity)
             # insert scraper_player_skill
-            insert_scraper_player_skill(session=session, data=scraper_skill)
+            if scraper_skill:
+                insert_scraper_player_skill(session=session, data=scraper_skill)
             session.commit()
 
     def get_latest_record_for_player(

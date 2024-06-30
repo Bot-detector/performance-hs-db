@@ -1,41 +1,34 @@
-# from src.example.main import BenchMark
 import importlib
+import os
 import random
+import sys
 from datetime import datetime, timedelta
 
-from src import BenchmarkABC, HiscoreRecord
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from src import (  # noqa: E402
+    ActivitiesRecord,
+    BenchmarkABC,
+    HiscoreRecord,
+    SkillsRecord,
+)
 
-from .metrics import Metrics
-
-module = importlib.import_module("src.example.main")
-BenchMark: BenchmarkABC = getattr(module, "BenchMark")
-metrics = Metrics(implementation="example")
 players = set()
 
 
-def batch_data(data: list, batch_size: int):
-    """
-    Generator to yield batches from a list of data.
-
-    :param data: List of input data
-    :param batch_size: Size of each batch
-    :yield: Batches of data
-    """
-    for i in range(0, len(data), batch_size):
-        yield data[i : i + batch_size]
-
-
-def create_test_data(len_players: int = 1_000_000):
+def create_test_data(
+    len_players: int = 1_000, max_len_days=60
+) -> dict[str, list[datetime]]:
     print("creating sample data")
     return {
         player_id: [
-            datetime.now() - timedelta(days=i) for i in range(random.randint(0, 60))
+            datetime.now() - timedelta(days=i)
+            for i in range(random.randint(0, max_len_days))
         ]
         for player_id in range(len_players)
     }
 
 
-def data_to_batch(
+def create_test_batch(
     data: dict[str, list[datetime]], batch_size: int
 ) -> list[HiscoreRecord]:
     players = list(data.keys())
@@ -51,13 +44,20 @@ def data_to_batch(
 
         earliest_record = records.pop(-1)
 
-        batch.append(
-            HiscoreRecord(
-                scrape_ts=earliest_record,
-                scrape_date=earliest_record.isoformat(),
-                player_id=player_id,
-            )
+        skills = SkillsRecord()
+        skills.random()
+
+        activities = ActivitiesRecord()
+        activities.random()
+
+        record = HiscoreRecord(
+            scrape_ts=earliest_record,
+            scrape_date=earliest_record.date(),
+            player_id=player_id,
+            skills=skills,
+            activities=activities,
         )
+        batch.append(record)
 
         if not records:
             data.pop(player_id)
@@ -65,108 +65,14 @@ def data_to_batch(
     return batch
 
 
-def test_insert():
-    global players
-    global metrics
-    global BenchMark
+def test_e2e():
+    implementation = os.environ.get("implementation")
+    if not implementation:
+        implementation = input("implementation: ")
+    module = importlib.import_module(f"src.{implementation}.main")
+    bench: BenchmarkABC = getattr(module, "BenchMark")
+    bench = bench()
 
-    bench = BenchMark()
-    len_players = 10_000
-
-    data = create_test_data(len_players=len_players)
-    # inserting singles
-
-    total_records = 100_000
-    batch_size = 100
-
-    for i in range(int(total_records / batch_size)):
-        batch = data_to_batch(data=data, batch_size=batch_size)
-
-        bench.insert_many_records(records=batch)
-
-        if i % 10 == 0:
-            print(f"{i=}, inserted: {i*batch_size}, players left: {len(data)}")
-            metrics.add("test_insert", i)
-
-        for b in batch:
-            players.add(b.player_id)
-        if len(data) == 0:
-            break
-
-
-def test_get_all_records_for_player():
-    global players
-    global metrics
-    global BenchMark
-
-    _players = list(players)
-    random.shuffle(_players)
-    bench = BenchMark()
-
-    for i, player in enumerate(_players[:100]):
-        _ = bench.get_all_records_for_player(player_id=player)
-
-        if i % 10 == 0:
-            metrics.add("test_get_all_records_for_player", i)
-
-
-def test_get_latest_record_for_player():
-    global players
-    global metrics
-    global BenchMark
-
-    _players = list(players)
-    random.shuffle(_players)
-    bench = BenchMark()
-
-    for i, player in enumerate(_players[:100]):
-        _ = bench.get_latest_record_for_player(player_id=player)
-
-        if i % 10 == 0:
-            metrics.add("test_get_latest_record_for_player", i)
-
-
-def test_get_all_records_for_many_players():
-    global players
-    global metrics
-    global BenchMark
-
-    _players = list(players)
-    random.shuffle(_players)
-    bench = BenchMark()
-
-    batch_size = 10
-    for i in range(0, 100, batch_size):
-        batch = _players[i : i + batch_size]
-        if not batch:
-            break
-        _ = bench.get_all_records_for_many_players(players=batch)
-
-        if i % 10 == 0:
-            metrics.add("test_get_all_records_for_many_players", i)
-
-
-def test_get_latest_record_for_many_players():
-    global players
-    global metrics
-    global BenchMark
-
-    _players = list(players)
-    random.shuffle(_players)
-    bench = BenchMark()
-
-    batch_size = 10
-    for i in range(0, 100, batch_size):
-        batch = _players[i : i + batch_size]
-        if not batch:
-            break
-        _ = bench.get_latest_record_for_many_players(players=batch)
-
-        if i % 10 == 0:
-            metrics.add("test_get_latest_record_for_many_players", i)
-
-
-def test_write_to_file():
-    global metrics
-
-    metrics.to_jsonl(file=__file__)
+    test_data = create_test_data(len_players=1_000)
+    batch = create_test_batch(data=test_data, batch_size=10)
+    bench.insert_many_records(records=batch)
