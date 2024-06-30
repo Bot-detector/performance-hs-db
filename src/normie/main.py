@@ -1,4 +1,5 @@
 # import logging
+import copy
 from dataclasses import asdict, dataclass
 from datetime import date, datetime
 
@@ -252,31 +253,47 @@ def parse_hiscore_records(records: list[HiscoreRecord]) -> list[ScraperRecord]:
 
     # iterate over batch records
     for record in records:
+        player_skills = []
+        player_activities = []
+
+        for skill, v in asdict(record.skills).items():
+            skill_id = skill_map.get(skill)
+            if not skill_id:
+                print(f"{skill=} not found, {record=}")
+                continue
+            elif not v:
+                continue
+            player_skills.append(
+                PlayerSkill(
+                    skill_id=skill_id,
+                    skill_value=v,
+                )
+            )
+
+        for activity, v in asdict(record.activities).items():
+            activity_id = activity_map.get(activity)
+            if not activity_id:
+                print(f"{activity=} not found, {record=}")
+                continue
+            elif not v:
+                continue
+
+            player_activities.append(
+                PlayerActivity(
+                    activity_id=activity_id,
+                    activity_value=v,
+                )
+            )
+
         scraper_data = ScraperData(
             scrape_ts=record.scrape_ts,
             scrape_date=record.scrape_date,
             player_id=record.player_id,
         )
-        player_skills = [
-            PlayerSkill(
-                skill_id=skill_map.get(skill),
-                skill_value=v,
-            )
-            for skill, v in asdict(record.skills).items()
-            if skill_map.get(skill) and v
-        ]
-        player_activities = [
-            PlayerActivity(
-                activity_id=activity_map.get(activity),
-                activity_value=v,
-            )
-            for activity, v in asdict(record.activities).items()
-            if activity_map.get(activity) and v
-        ]
         scraper_record = ScraperRecord(
             scaper_data=scraper_data,
-            player_skills=player_skills,
-            player_activities=player_activities,
+            player_skills=copy.deepcopy(player_skills),
+            player_activities=copy.deepcopy(player_activities),
         )
         scraper_records.append(scraper_record)
     return scraper_records
@@ -300,46 +317,53 @@ class BenchMark(BenchmarkABC):
             insert_player_skill(session=session, data=player_skills)
             insert_scraper_data(session=session, data=scraper_data)
 
+            scraper_skills = []
+            scraper_activities = []
             for sr in scraper_records:
                 # create list of scraper_player_activity
+
                 # create list of scraper_player_skill
                 scrape_id = select_scraper_data(session=session, data=sr.scaper_data)[0]
+                assert isinstance(scrape_id, int)
 
                 # select player_activity, player_skill, scraper_data
-                scraper_activity = [
-                    ScraperActivity(
-                        scrape_id=scrape_id,
-                        player_activity_id=select_player_activity(
-                            session=session,
-                            data=pa,
-                        )[0],
-                    )
-                    for pa in sr.player_activities
-                    if pa
-                ]
-                scraper_skill = [
-                    ScraperSkill(
-                        scrape_id=scrape_id,
-                        player_skill_id=select_player_skill(
-                            session=session,
-                            data=ps,
-                        )[0],
-                    )
-                    for ps in sr.player_skills
-                    if ps
-                ]
-            print(f"{len(scraper_activity)=}")
-            print(f"{len(scraper_skill)=}")
+                for ps in sr.player_skills:
+                    if not ps:
+                        continue
 
-            [print(f"{sa=}") for sa in scraper_activity if not sa.scrape_id]
-            [print(f"{ss=}") for ss in scraper_skill if not ss.scrape_id]
+                    player_skill_id = select_player_skill(session=session, data=ps)
+                    player_skill_id = player_skill_id[0]
+                    assert isinstance(player_skill_id, int)
 
-            # insert scraper_player_activity
-            if scraper_activity:
-                insert_scraper_player_activity(session=session, data=scraper_activity)
+                    scraper_skills.append(
+                        ScraperSkill(
+                            scrape_id=scrape_id,
+                            player_skill_id=player_skill_id,
+                        )
+                    )
+
+                for pa in sr.player_activities:
+                    if not pa:
+                        continue
+
+                    player_act_id = select_player_activity(session=session, data=pa)
+                    player_act_id = player_act_id[0]
+                    assert isinstance(player_act_id, int)
+
+                    scraper_activities.append(
+                        ScraperActivity(
+                            scrape_id=scrape_id,
+                            player_activity_id=player_act_id,
+                        )
+                    )
+
             # insert scraper_player_skill
-            if scraper_skill:
-                insert_scraper_player_skill(session=session, data=scraper_skill)
+            if scraper_skills:
+                insert_scraper_player_skill(session=session, data=scraper_skills)
+            # insert scraper_player_activity
+            if scraper_activities:
+                insert_scraper_player_activity(session=session, data=scraper_activities)
+
             session.commit()
 
     def get_latest_record_for_player(

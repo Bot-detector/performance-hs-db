@@ -12,6 +12,8 @@ from src import (  # noqa: E402
     SkillsRecord,
 )
 
+random.seed(42)
+
 players = set()
 
 
@@ -69,6 +71,7 @@ def test_e2e():
     implementation = os.environ.get("implementation")
     if not implementation:
         implementation = input("implementation: ")
+
     module = importlib.import_module(f"src.{implementation}.main")
     bench: BenchmarkABC = getattr(module, "BenchMark")
     bench = bench()
