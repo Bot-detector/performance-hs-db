@@ -8,10 +8,6 @@ from sqlalchemy.orm import Session
 
 from .. import BenchmarkABC, HiscoreRecord, get_session
 
-# from .. import ActivitiesRecord, BenchmarkABC, HiscoreRecord, SkillsRecord, get_session
-
-# logger = logging.getLogger(__name__)
-
 
 @dataclass
 class PlayerSkill:
@@ -320,10 +316,12 @@ class BenchMark(BenchmarkABC):
             scraper_skills = []
             scraper_activities = []
             for sr in scraper_records:
-                # create list of scraper_player_activity
+                scrape_id = select_scraper_data(session=session, data=sr.scaper_data)
+                if not scrape_id:
+                    print(f"invalid {scrape_id=}, {sr=}")
+                    raise ValueError(f"invalid {scrape_id=}, {sr=}")
 
-                # create list of scraper_player_skill
-                scrape_id = select_scraper_data(session=session, data=sr.scaper_data)[0]
+                scrape_id = scrape_id[0]
                 assert isinstance(scrape_id, int)
 
                 # select player_activity, player_skill, scraper_data
