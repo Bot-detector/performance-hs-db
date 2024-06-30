@@ -27,7 +27,7 @@ CREATE TABLE player_skills (
 ;
 
 CREATE TABLE player_activities (
-    player_activity_id bigint unsigned NOT NULL,
+    player_activity_id bigint unsigned NOT NULL AUTO_INCREMENT,
     activity_id tinyint unsigned NOT NULL,
     activity_value int unsigned NOT NULL DEFAULT '0',
     PRIMARY KEY (player_activity_id),
