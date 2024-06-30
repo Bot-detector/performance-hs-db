@@ -9,29 +9,24 @@ from .. import ActivitiesRecord, BenchmarkABC, HiscoreRecord, SkillsRecord, get_
 
 
 class BenchMark(BenchmarkABC):
-    def insert_many_records(self, records: list[HiscoreRecord]) -> None:
-        ...
+    def insert_many_records(self, records: list[HiscoreRecord]) -> None: ...
 
     def get_latest_record_for_player(
         self,
         player_id: int,
-    ) -> HiscoreRecord:
-        ...
+    ) -> HiscoreRecord: ...
 
     def get_latest_record_for_many_players(
         self,
         players: list[int],
-    ) -> list[HiscoreRecord]:
-        ...
+    ) -> list[HiscoreRecord]: ...
 
     def get_all_records_for_player(
         self,
         player_id: int,
-    ) -> list[HiscoreRecord]:
-        ...
+    ) -> list[HiscoreRecord]: ...
 
     def get_all_records_for_many_players(
         self,
         players: list[int],
-    ) -> list[HiscoreRecord]:
-        ...
+    ) -> list[HiscoreRecord]: ...
