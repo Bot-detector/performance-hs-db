@@ -51,6 +51,8 @@ class ScraperRecord:
 
 
 def insert_player_skill(session: Session, data: list[PlayerSkill]):
+    if not data:
+        return
     sql = """
         insert into player_skills (skill_id, skill_value)
         values (:skill_id, :skill_value)
@@ -63,6 +65,8 @@ def insert_player_skill(session: Session, data: list[PlayerSkill]):
 
 
 def insert_player_activity(session: Session, data: list[PlayerActivity]):
+    if not data:
+        return
     sql = """
         insert into player_activities (activity_id, activity_value)
         values (:activity_id, :activity_value)
@@ -75,6 +79,8 @@ def insert_player_activity(session: Session, data: list[PlayerActivity]):
 
 
 def insert_scraper_data(session: Session, data: list[ScraperData]):
+    if not data:
+        return
     sql = """
         insert into scraper_data (scrape_ts, scrape_date, player_id)
         values (:scrape_ts, :scrape_date, :player_id)
@@ -87,6 +93,8 @@ def insert_scraper_data(session: Session, data: list[ScraperData]):
 
 
 def insert_scraper_player_skill(session: Session, data: list[ScraperSkill]):
+    if not data:
+        return
     sql = """
         insert into scraper_player_skills (scrape_id, player_skill_id)
         values (:scrape_id, :player_skill_id)
@@ -99,6 +107,8 @@ def insert_scraper_player_skill(session: Session, data: list[ScraperSkill]):
 
 
 def insert_scraper_player_activity(session: Session, data: list[ScraperSkill]):
+    if not data:
+        return
     sql = """
         insert into scraper_player_activities (scrape_id, player_activity_id)
         values (:scrape_id, :player_activity_id)
@@ -308,6 +318,9 @@ class BenchMark(BenchmarkABC):
             player_skills.extend(sr.player_skills)
             scraper_data.append(sr.scaper_data)
 
+        # print(f"{len(player_activities)=}")
+        # print(f"{len(player_skills)=}")
+
         with get_session() as session:
             insert_player_activity(session=session, data=player_activities)
             insert_player_skill(session=session, data=player_skills)
@@ -354,12 +367,15 @@ class BenchMark(BenchmarkABC):
                             player_activity_id=player_act_id,
                         )
                     )
+            # print(f"{len(scraper_skills)=}")
+            # print(f"{len(scraper_activities)=}")
 
             # insert scraper_player_skill
-            if scraper_skills:
+            if len(scraper_skills) > 0:
                 insert_scraper_player_skill(session=session, data=scraper_skills)
             # insert scraper_player_activity
-            if scraper_activities:
+            if len(scraper_activities) > 0:
+                print(f"{scraper_activities=}")
                 insert_scraper_player_activity(session=session, data=scraper_activities)
 
             session.commit()

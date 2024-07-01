@@ -56,8 +56,8 @@ class SkillsRecord:
         mlen = len(self.__dataclass_fields__)
         fields = self.__random_keys(mu=5, sigma=5, min_value=0, max_value=mlen)
         gauss_gen = self.__yield_gauss(
-            mu=1_000_000,  # Average OSRS skill exp (e.g., attack, defence, etc.)
-            sigma=500_000,  # Standard deviation for skill exp
+            mu=3_301_035,  # Average OSRS skill exp (e.g., attack, defence, etc.)
+            sigma=8_560_358,  # Standard deviation for skill exp
             min_value=0,  # Minimum possible skill exp
             max_value=200_000_000,  # Maximum possible skill exp
         )
@@ -167,10 +167,11 @@ class ActivitiesRecord:
         mlen = len(self.__dataclass_fields__)
         fields = self.__random_keys(mu=5, sigma=5, min_value=0, max_value=mlen)
         gauss_gen = self.__yield_gauss(
-            mu=500,  # Average OSRS activity score (e.g., league, bounty_hunter_hunter, etc.)
-            sigma=20_000,  # Standard deviation for activity score
+            mu=48,  # Average OSRS activity score (e.g., league, bounty_hunter_hunter, etc.)
+            sigma=270,  # Standard deviation for activity score
             min_value=0,  # Minimum possible activity score
             max_value=65_000,  # Maximum possible activity score
+            rounded=100,
         )
         for _field in fields:
             value = int(next(gauss_gen))

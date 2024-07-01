@@ -77,5 +77,6 @@ def test_e2e():
     bench = bench()
 
     test_data = create_test_data(len_players=1_000)
-    batch = create_test_batch(data=test_data, batch_size=10)
-    bench.insert_many_records(records=batch)
+    for _ in range(1000):
+        batch = create_test_batch(data=test_data, batch_size=10)
+        bench.insert_many_records(records=batch)
