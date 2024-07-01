@@ -375,7 +375,6 @@ class BenchMark(BenchmarkABC):
                 insert_scraper_player_skill(session=session, data=scraper_skills)
             # insert scraper_player_activity
             if len(scraper_activities) > 0:
-                print(f"{scraper_activities=}")
                 insert_scraper_player_activity(session=session, data=scraper_activities)
 
             session.commit()
