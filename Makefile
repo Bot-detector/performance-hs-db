@@ -65,7 +65,8 @@ docker-restart: _create-make-env docker-down## Restart containers
 docker-test: docker-restart## Restart containers & test
 	@export implementation=$$(grep implementation make.env | cut -d '=' -f 2) && \
 	implementation=$$implementation pytest -s tests/
-	
+
+# Target to restart Docker containers and run benchmark	
 docker-benchmark: docker-restart
 	@export implementation=$$(grep implementation make.env | cut -d '=' -f 2) && \
 	implementation=$$implementation python3 performance_test/main.py
