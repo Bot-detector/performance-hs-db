@@ -68,7 +68,7 @@ example structure
 - `src/example/mysql/docker-entrypoint-initdb.d/01_custom.sql`, the second sql file that will be run, please modify this file with a unique schema that you think is more performant.
 ### setting up your own benchmark implementation
 1. copy the src/example to your desired contributions name `cp -r src/example src/<name>`
-2. create your schema in `src/<>/mysql/01_custom.sql`
+2. create your schema in `src/<name>/mysql/01_custom.sql`
 3. implement your schema with our interface `BenchmarkABC`
     - please consider only using the sqlalchemy query builder or raw sql with parameters.
 3. battle for insert speed, query speed, database size
@@ -80,8 +80,9 @@ this will first remove any running database if you had one, than spin up a new d
 make docker-restart
 ```
 
-## testing your database
+## testing your database / implementation
 this will first remove any running database if you had one, than spin up a new database, to finally run `pytest -s tests/`
+the purpose is to test your benchmark implementation, this is not the performance test, this is just for you during development.
 ```sh
 make docker-test
 ```

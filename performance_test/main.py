@@ -63,7 +63,7 @@ def batch_data(data: dict[str, list[datetime]], batch_size: int) -> list[Hiscore
 
         record = HiscoreRecord(
             scrape_ts=earliest_record,
-            scrape_date=earliest_record.isoformat(),
+            scrape_date=earliest_record.date(),
             player_id=player_id,
             skills=skills,
             activities=activities,
@@ -207,7 +207,9 @@ def metrics_to_file(metrics: Metrics):
 
 if __name__ == "__main__":
     LEN_PLAYERS = 100_000
-    implementation = input("implementation: ") # TODO: take argument
+    implementation = os.environ.get("implementation")
+    if not implementation:
+        implementation = input("implementation: ")
     metrics = Metrics(implementation=implementation)
     module = importlib.import_module(f"src.{implementation}.main")
     benchmark: BenchmarkABC = getattr(module, "BenchMark")

@@ -31,38 +31,51 @@ clean-test: ## cleanup pytests leftovers
 	rm -f test-results.html
 	rm -f output.xml
 
-docker-restart: ## restart containers
-	@echo "Enter implementation name:" && read implementation && \
-	docker compose -f src/$$implementation/docker-compose.yml down && \
-	docker compose -f src/$$implementation/docker-compose.yml up -d
+_create-make-env: ## Create make.env file
+	@echo 'Enter implementation name: ' && \
+	read implementation && \
+	if [ -z "$$implementation" ]; then \
+		echo "Implementation name cannot be empty."; \
+		exit 1; \
+	fi && \
+	echo "implementation=$$implementation" > make.env && \
+	echo "Created make.env"
 
-docker-test: docker-restart ## restart containers & test
-	pytest -s tests/
-	
+# Target to stop all Docker containers in the src directory
+docker-down: ## Stop all containers in src folders
+	@for dir in src/*/ ; do \
+		if [ -f "$${dir}docker-compose.yml" ]; then \
+			echo "Stopping Docker containers in $${dir}..." && \
+			docker compose -f "$${dir}docker-compose.yml" down ; \
+		fi \
+	done
+
+# Target to restart Docker containers
+docker-restart: _create-make-env docker-down## Restart containers
+	@export implementation=$$(grep implementation make.env | cut -d '=' -f 2) && \
+	compose_file="src/$$implementation/docker-compose.yml" && \
+	if [ ! -f "$$compose_file" ]; then \
+		echo "docker-compose.yml not found for implementation: $$implementation"; \
+		exit 1; \
+	fi && \
+	echo "Using: $$compose_file" && \
+	docker compose -f "$$compose_file" up -d
+
+# Target to restart Docker containers and run tests
+docker-test: docker-restart## Restart containers & test
+	@export implementation=$$(grep implementation make.env | cut -d '=' -f 2) && \
+	implementation=$$implementation pytest -s tests/
+
+# Target to restart Docker containers and run benchmark	
 docker-benchmark: docker-restart
-	python3 performance_test/main.py
+	@export implementation=$$(grep implementation make.env | cut -d '=' -f 2) && \
+	implementation=$$implementation python3 performance_test/main.py
 
 docker-grafana:
 	docker compose -f performance_test/docker-compose.yml down
 	docker compose -f performance_test/docker-compose.yml up -d --build
 
-pre-commit-setup: ## Install pre-commit
-	python3 -m pip install pre-commit
-	pre-commit --version
-
-test-requirements: ## installs pytest singular package for local testing
-	python3 -m pip install pytest 
-	python3 -m pip install requests 
-	python3 -m pip install hypothesis
-	python3 -m pip install pytest-asyncio
-
 requirements: ## installs all requirements
 	python3 -m pip install -r requirements.txt
-	python3 -m pip install ruff
-
-setup: pre-commit-setup test-requirements requirements ## setup requirements
-
-docs: ## opens your browser to the webapps testing docs
-	open http://localhost:5000/docs
-	xdg-open http://localhost:5000/docs
-	. http://localhost:5000/docs
+	python3 -m pip install pytest requests hypothesis pytest-asyncio precommit ruff
+	pre-commit --version

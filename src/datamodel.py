@@ -1,7 +1,5 @@
-import json
 import random
-from copy import deepcopy
-from dataclasses import asdict, dataclass, field, replace
+from dataclasses import dataclass
 from datetime import date, datetime
 
 
@@ -31,7 +29,7 @@ class SkillsRecord:
     hunter: int = None
     construction: int = None
 
-    def __yield_gauss(self, mu, sigma, min_value, max_value):
+    def __yield_gauss(self, mu, sigma, min_value, max_value, rounded: int = 1_000):
         while True:
             num = int(round(random.gauss(mu, sigma), 0))
             # yield min value if lower
@@ -39,7 +37,7 @@ class SkillsRecord:
             if num <= min_value:
                 yield min_value
             elif min_value <= num <= max_value:
-                yield num
+                yield int(num / rounded) * rounded
 
     def __random_keys(self, mu: int, sigma: int, min_value: int, max_value: int):
         """
@@ -58,10 +56,10 @@ class SkillsRecord:
         mlen = len(self.__dataclass_fields__)
         fields = self.__random_keys(mu=5, sigma=5, min_value=0, max_value=mlen)
         gauss_gen = self.__yield_gauss(
-            mu=5_000_000,
-            sigma=1_000_000,
-            min_value=0,
-            max_value=200_000_000,
+            mu=3_301_035,  # Average OSRS skill exp (e.g., attack, defence, etc.)
+            sigma=8_560_358,  # Standard deviation for skill exp
+            min_value=0,  # Minimum possible skill exp
+            max_value=200_000_000,  # Maximum possible skill exp
         )
         for _field in fields:
             value = int(next(gauss_gen))
@@ -142,7 +140,7 @@ class ActivitiesRecord:
     the_whisperer: int = None
     vardorvis: int = None
 
-    def __yield_gauss(self, mu, sigma, min_value, max_value):
+    def __yield_gauss(self, mu, sigma, min_value, max_value, rounded: int = 10):
         while True:
             num = int(round(random.gauss(mu, sigma), 0))
             # yield min value if lower
@@ -150,7 +148,7 @@ class ActivitiesRecord:
             if num <= min_value:
                 yield min_value
             elif min_value <= num <= max_value:
-                yield num
+                yield int(num / rounded) * rounded
 
     def __random_keys(self, mu: int, sigma: int, min_value: int, max_value: int):
         """
@@ -169,10 +167,11 @@ class ActivitiesRecord:
         mlen = len(self.__dataclass_fields__)
         fields = self.__random_keys(mu=5, sigma=5, min_value=0, max_value=mlen)
         gauss_gen = self.__yield_gauss(
-            mu=5_000_000,
-            sigma=1_000_000,
-            min_value=0,
-            max_value=200_000_000,
+            mu=48,  # Average OSRS activity score (e.g., league, bounty_hunter_hunter, etc.)
+            sigma=270,  # Standard deviation for activity score
+            min_value=0,  # Minimum possible activity score
+            max_value=65_000,  # Maximum possible activity score
+            rounded=100,
         )
         for _field in fields:
             value = int(next(gauss_gen))

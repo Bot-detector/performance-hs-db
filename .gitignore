@@ -167,3 +167,5 @@ metrics/*.jsonl
 performance_test/grafana-storage/*
 performance_test/metrics/*.jsonl
 performance_test/config/positions.yml
+make.env
+.env
