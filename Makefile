@@ -41,6 +41,8 @@ _create-make-env: ## Create make.env file
 	echo "implementation=$$implementation" > make.env && \
 	echo "Created make.env"
 
+
+
 # Target to stop all Docker containers in the src directory
 docker-down: ## Stop all containers in src folders
 	@for dir in src/*/ ; do \
@@ -71,6 +73,22 @@ docker-benchmark: docker-restart
 	@export implementation=$$(grep implementation make.env | cut -d '=' -f 2) && \
 	implementation=$$implementation python3 performance_test/main.py
 
+# Target to test all Docker containers in the src directory
+docker-benchmark-all: docker-down ## Stop all containers in src folders and test
+	@for dir in src/*/ ; do \
+		if [ -f "$${dir}docker-compose.yml" ]; then \
+			echo "Starting Docker containers in $${dir}..." ; \
+			docker compose -f "$${dir}docker-compose.yml" up -d ; \
+			dir_name=$$(basename "$${dir}") ; \
+			for i in 1 2 3; do \
+				echo "Running performance test $${i} for $${dir_name}..." ; \
+				implementation=$${dir_name} python3 performance_test/main.py ; \
+			done ; \
+			echo "Stopping Docker containers in $${dir}..." ; \
+			docker compose -f "$${dir}docker-compose.yml" down ; \
+		fi \
+	done
+	
 docker-grafana:
 	docker compose -f performance_test/docker-compose.yml down
 	docker compose -f performance_test/docker-compose.yml up -d --build
