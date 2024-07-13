@@ -1,5 +1,4 @@
 # import logging
-import copy
 from dataclasses import asdict, dataclass
 from datetime import date, datetime
 
@@ -10,147 +9,171 @@ from .. import BenchmarkABC, HiscoreRecord, get_session
 
 
 @dataclass
-class PlayerSkill:
-    # player_skill_id: int
+class ScraperPlayerSkill:
     skill_id: int
     skill_value: int
-
-
-@dataclass
-class PlayerActivity:
-    # player_activity_id: int
-    activity_id: int
-    activity_value: int
-
-
-@dataclass
-class ScraperData:
-    # scrape_id: int
     scrape_ts: datetime
     scrape_date: date
     player_id: int
 
 
 @dataclass
-class ScraperSkill:
-    scrape_id: int
-    player_skill_id: int
-
-
-@dataclass
-class ScraperActivity:
-    scrape_id: int
-    player_activity_id: int
+class ScraperPlayerActivity:
+    activity_id: int
+    activity_value: int
+    scrape_ts: datetime
+    scrape_date: date
+    player_id: int
 
 
 @dataclass
 class ScraperRecord:
-    scaper_data: ScraperData
-    player_activities: list[PlayerActivity]
-    player_skills: list[PlayerSkill]
+    skill_id: int
+    skill_value: int
+    activity_id: int
+    activity_value: int
+    scrape_ts: datetime
+    scrape_date: date
+    player_id: int
 
 
-def insert_player_skill(session: Session, data: list[PlayerSkill]):
-    if not data:
-        return
-    sql = """
-        insert into player_skills (skill_id, skill_value)
-        values (:skill_id, :skill_value)
-        on duplicate key update
-            skill_id = values(skill_id),
-            skill_value = values(skill_value)
-        """
-    session.execute(sqla.text(sql), [asdict(d) for d in data if d])
-    return
+def bulk_normalized_insert(
+    session: Session,
+    skills: list[ScraperPlayerSkill],
+    activities: list[ScraperPlayerActivity],
+):
+    # create temp (staging) tables
+    sql_create_temp_skills = """
+        CREATE TEMPORARY TABLE temp_skill (
+            skill_id TINYINT, 
+            skill_value INT, 
+            scrape_ts DATETIME, 
+            scrape_date DATE, 
+            player_id INT
+        ) ENGINE=MEMORY;
+    """
+    sql_create_temp_activities = """
+        CREATE TEMPORARY TABLE temp_activity (
+            activity_id TINYINT, 
+            activity_value INT, 
+            scrape_ts DATETIME, 
+            scrape_date DATE, 
+            player_id INT
+        ) ENGINE=MEMORY;
+    """
+    # insert into temp (staging) tables
+    sql_insert_temp_skills = """
+        INSERT INTO temp_skill (skill_id, skill_value, scrape_ts, scrape_date, player_id) 
+        VALUES (:skill_id, :skill_value, :scrape_ts, :scrape_date, :player_id);
+    """
+    sql_insert_temp_activities = """
+        INSERT INTO temp_activity (activity_id, activity_value, scrape_ts, scrape_date, player_id) 
+        VALUES (:activity_id, :activity_value, :scrape_ts, :scrape_date, :player_id);
+    """
 
+    # insert into the normalized tables
+    sql_insert_pl_skill = """
+        INSERT IGNORE INTO player_skill (skill_id, skill_value)
+        SELECT DISTINCT skill_id, skill_value FROM temp_skill tp
+        WHERE NOT EXISTS (
+            SELECT 1 FROM player_skill ps
+            WHERE 1
+                AND tp.skill_id = ps.skill_id
+                AND tp.skill_value = ps.skill_value
+        );
+    """
+    sql_insert_pl_activity = """
+        INSERT IGNORE INTO player_activity (activity_id, activity_value)
+        SELECT DISTINCT activity_id, activity_value FROM temp_activity tp
+        WHERE NOT EXISTS (
+            SELECT 1 FROM player_activity pa
+            WHERE 1
+                AND tp.activity_id = pa.activity_id
+                AND tp.activity_value = pa.activity_value
+        );
+    """
 
-def insert_player_activity(session: Session, data: list[PlayerActivity]):
-    if not data:
-        return
-    sql = """
-        insert into player_activities (activity_id, activity_value)
-        values (:activity_id, :activity_value)
-        on duplicate key update
-            activity_id = values(activity_id),
-            activity_value = values(activity_value)
-        """
-    session.execute(sqla.text(sql), [asdict(d) for d in data if d])
-    return
+    sql_insert_sc_data = """
+        INSERT IGNORE INTO scraper_data (scrape_ts, scrape_date, player_id)
+        select DISTINCT scrape_ts, scrape_date, player_id from (
+            SELECT scrape_ts, scrape_date, player_id FROM temp_skill ts
+            UNION
+            SELECT scrape_ts, scrape_date, player_id FROM temp_activity ta
+        ) tp
+        WHERE NOT EXISTS (
+            SELECT 1 FROM scraper_data sd
+            WHERE 1
+                AND tp.scrape_date = sd.scrape_date
+                AND tp.player_id = sd.player_id
+        )
+        ;
+    """
 
+    # insert into the joinging tables
+    sql_insert_sc_pl_skill = """
+        INSERT IGNORE INTO scraper_player_skill (scrape_id, player_skill_id)
+        SELECT sd.scrape_id, ps.player_skill_id FROM temp_skill tp
+        join scraper_data sd ON (
+            tp.scrape_date = sd.scrape_date AND 
+            tp.player_id = sd.player_id
+        )
+        JOIN player_skill ps ON (
+            tp.skill_id = ps.skill_id AND
+            tp.skill_value = ps.skill_value
+        )
+        WHERE NOT EXISTS (
+            SELECT 1 FROM scraper_player_skill sps
+            WHERE 1
+                AND sps.scrape_id = sd.scrape_id
+                AND sps.player_skill_id = ps.player_skill_id
+        );
+    """
+    sql_insert_sc_pl_activity = """
+        INSERT IGNORE INTO scraper_player_activity (scrape_id, player_activity_id)
+        SELECT sd.scrape_id, pa.player_activity_id FROM temp_activity tp
+        join scraper_data sd ON (
+            tp.scrape_date = sd.scrape_date AND 
+            tp.player_id = sd.player_id
+        )
+        JOIN player_activity pa ON (
+            tp.activity_id = pa.activity_id AND
+            tp.activity_value = pa.activity_value
+        )
+        WHERE NOT EXISTS (
+            SELECT 1 FROM scraper_player_activity spa
+            WHERE 1
+                AND spa.scrape_id = sd.scrape_id
+                AND spa.player_activity_id = pa.player_activity_id
+        );
+    """
+    # cleanup
+    session.execute(sqla.text("DROP TABLE IF EXISTS temp_skill"))
+    session.execute(sqla.text("DROP TABLE IF EXISTS temp_activity"))
+    # create temp (staging) tables
+    session.execute(sqla.text(sql_create_temp_skills))
+    session.execute(sqla.text(sql_create_temp_activities))
 
-def insert_scraper_data(session: Session, data: list[ScraperData]):
-    if not data:
-        return
-    sql = """
-        insert into scraper_data (scrape_ts, scrape_date, player_id)
-        values (:scrape_ts, :scrape_date, :player_id)
-        on duplicate key update
-            scrape_date = values(scrape_date),
-            player_id = values(player_id)
-        """
-    session.execute(sqla.text(sql), [asdict(d) for d in data])
-    return
+    # parse data into dict
+    _skills = [asdict(s) for s in skills]
+    _activities = [asdict(a) for a in activities]
 
+    # insert into temp (staging) tables
+    if len(_skills) > 0:
+        session.execute(sqla.text(sql_insert_temp_skills), params=_skills)
+    if len(_activities) > 0:
+        session.execute(sqla.text(sql_insert_temp_activities), params=_activities)
 
-def insert_scraper_player_skill(session: Session, data: list[ScraperSkill]):
-    if not data:
-        return
-    sql = """
-        insert into scraper_player_skills (scrape_id, player_skill_id)
-        values (:scrape_id, :player_skill_id)
-        on duplicate key update
-            scrape_id = values(scrape_id),
-            player_skill_id = values(player_skill_id)
-        """
-    session.execute(sqla.text(sql), [asdict(d) for d in data if d])
-    return
+    # insert data into normalized table
+    session.execute(sqla.text(sql_insert_sc_data))
+    session.execute(sqla.text(sql_insert_pl_skill))
+    session.execute(sqla.text(sql_insert_pl_activity))
 
-
-def insert_scraper_player_activity(session: Session, data: list[ScraperSkill]):
-    if not data:
-        return
-    sql = """
-        insert into scraper_player_activities (scrape_id, player_activity_id)
-        values (:scrape_id, :player_activity_id)
-        on duplicate key update
-            scrape_id = values(scrape_id),
-            player_activity_id = values(player_activity_id)
-        """
-    session.execute(sqla.text(sql), [asdict(d) for d in data if d])
-    return
-
-
-def select_player_skill(session: Session, data: PlayerSkill):
-    sql = """
-        select player_skill_id from player_skills 
-        where 1=1
-            and skill_id = :skill_id
-            and skill_value = :skill_value
-        """
-    result = session.execute(sqla.text(sql), params=asdict(data))
-    return result.first()
-
-
-def select_player_activity(session: Session, data: PlayerActivity):
-    sql = """
-        select player_activity_id from player_activities 
-        where 1=1
-            and activity_id = :activity_id
-            and activity_value = :activity_value
-        """
-    result = session.execute(sqla.text(sql), params=asdict(data))
-    return result.first()
-
-
-def select_scraper_data(session: Session, data: ScraperData):
-    sql = """
-        select scrape_id from scraper_data 
-        where 1=1
-            and player_id = :player_id
-            and scrape_date = :scrape_date
-        """
-    result = session.execute(sqla.text(sql), params=asdict(data))
-    return result.first()
+    # insert data into linking table
+    session.execute(sqla.text(sql_insert_sc_pl_skill))
+    session.execute(sqla.text(sql_insert_sc_pl_activity))
+    # cleanup
+    session.execute(sqla.text("DROP TABLE IF EXISTS temp_skill"))
+    session.execute(sqla.text("DROP TABLE IF EXISTS temp_activity"))
 
 
 skill_map = {
@@ -254,147 +277,252 @@ activity_map = {
 }
 
 
-def parse_hiscore_records(records: list[HiscoreRecord]) -> list[ScraperRecord]:
-    scraper_records = []
+def parse_hiscore_records(
+    records: list[HiscoreRecord],
+) -> tuple[list[ScraperPlayerSkill], list[ScraperPlayerActivity]]:
+    skills = []
+    activities = []
 
     # iterate over batch records
     for record in records:
-        player_skills = []
-        player_activities = []
-
-        for skill, v in asdict(record.skills).items():
-            skill_id = skill_map.get(skill)
-            if not skill_id:
-                print(f"{skill=} not found, {record=}")
+        for skill_key, skill_value in asdict(record.skills).items():
+            skill_id = skill_map.get(skill_key)
+            if skill_id is None:
+                # print(f"{skill_id=}, {record=}")
                 continue
-            elif not v:
+            elif skill_value is None or skill_value == 0:
                 continue
-            player_skills.append(
-                PlayerSkill(
-                    skill_id=skill_id,
-                    skill_value=v,
-                )
+            _skill = ScraperPlayerSkill(
+                skill_id=skill_id,
+                skill_value=skill_value,
+                scrape_ts=record.scrape_ts,
+                scrape_date=record.scrape_date,
+                player_id=record.player_id,
             )
-
-        for activity, v in asdict(record.activities).items():
-            activity_id = activity_map.get(activity)
-            if not activity_id:
-                print(f"{activity=} not found, {record=}")
+            # print(f"appending, {_skill=}")
+            skills.append(_skill)
+        for activity_key, activity_value in asdict(record.activities).items():
+            activity_id = activity_map.get(activity_key)
+            if activity_id is None:
+                # print(f"{activity_id=}, {record=}")
                 continue
-            elif not v:
+            elif activity_value is None or activity_value == 0:
                 continue
-
-            player_activities.append(
-                PlayerActivity(
-                    activity_id=activity_id,
-                    activity_value=v,
-                )
+            _activity = ScraperPlayerActivity(
+                activity_id=activity_id,
+                activity_value=activity_value,
+                scrape_ts=record.scrape_ts,
+                scrape_date=record.scrape_date,
+                player_id=record.player_id,
             )
-
-        scraper_data = ScraperData(
-            scrape_ts=record.scrape_ts,
-            scrape_date=record.scrape_date,
-            player_id=record.player_id,
-        )
-        scraper_record = ScraperRecord(
-            scaper_data=scraper_data,
-            player_skills=copy.deepcopy(player_skills),
-            player_activities=copy.deepcopy(player_activities),
-        )
-        scraper_records.append(scraper_record)
-    return scraper_records
+            # print(f"appending, {_activity=}")
+            activities.append(_activity)
+    return skills, activities
 
 
 class BenchMark(BenchmarkABC):
     def insert_many_records(self, records: list[HiscoreRecord]) -> None:
-        scraper_records = parse_hiscore_records(records=records)
-
-        player_activities = []
-        player_skills = []
-        scraper_data = []
-
-        for sr in scraper_records:
-            player_activities.extend(sr.player_activities)
-            player_skills.extend(sr.player_skills)
-            scraper_data.append(sr.scaper_data)
-
-        # print(f"{len(player_activities)=}")
-        # print(f"{len(player_skills)=}")
+        skills, activities = parse_hiscore_records(records=records)
 
         with get_session() as session:
-            insert_player_activity(session=session, data=player_activities)
-            insert_player_skill(session=session, data=player_skills)
-            insert_scraper_data(session=session, data=scraper_data)
-
-            scraper_skills = []
-            scraper_activities = []
-            for sr in scraper_records:
-                scrape_id = select_scraper_data(session=session, data=sr.scaper_data)
-                if not scrape_id:
-                    print(f"invalid {scrape_id=}, {sr=}")
-                    raise ValueError(f"invalid {scrape_id=}, {sr=}")
-
-                scrape_id = scrape_id[0]
-                assert isinstance(scrape_id, int)
-
-                # select player_activity, player_skill, scraper_data
-                for ps in sr.player_skills:
-                    if not ps:
-                        continue
-
-                    player_skill_id = select_player_skill(session=session, data=ps)
-                    player_skill_id = player_skill_id[0]
-                    assert isinstance(player_skill_id, int)
-
-                    scraper_skills.append(
-                        ScraperSkill(
-                            scrape_id=scrape_id,
-                            player_skill_id=player_skill_id,
-                        )
-                    )
-
-                for pa in sr.player_activities:
-                    if not pa:
-                        continue
-
-                    player_act_id = select_player_activity(session=session, data=pa)
-                    player_act_id = player_act_id[0]
-                    assert isinstance(player_act_id, int)
-
-                    scraper_activities.append(
-                        ScraperActivity(
-                            scrape_id=scrape_id,
-                            player_activity_id=player_act_id,
-                        )
-                    )
-            # print(f"{len(scraper_skills)=}")
-            # print(f"{len(scraper_activities)=}")
-
-            # insert scraper_player_skill
-            if len(scraper_skills) > 0:
-                insert_scraper_player_skill(session=session, data=scraper_skills)
-            # insert scraper_player_activity
-            if len(scraper_activities) > 0:
-                insert_scraper_player_activity(session=session, data=scraper_activities)
-
+            bulk_normalized_insert(
+                session=session,
+                skills=skills,
+                activities=activities,
+            )
             session.commit()
 
-    def get_latest_record_for_player(
-        self,
-        player_id: int,
-    ) -> HiscoreRecord: ...
+    def get_latest_record_for_player(player_id: int) -> HiscoreRecord:
+        sql = """
+            SELECT sd.scrape_ts, sd.scrape_date, sd.player_id,
+                s.skill_name, ps.skill_value,
+                a.activity_name, pa.activity_value
+            FROM scraper_data sd
+            LEFT JOIN scraper_player_skill sps ON sd.scrape_id = sps.scrape_id
+            LEFT JOIN player_skill ps ON sps.player_skill_id = ps.player_skill_id
+            LEFT JOIN skill s ON ps.skill_id = s.skill_id
+            LEFT JOIN scraper_player_activity spa ON sd.scrape_id = spa.scrape_id
+            LEFT JOIN player_activity pa ON spa.player_activity_id = pa.player_activity_id
+            LEFT JOIN activity a ON pa.activity_id = a.activity_id
+            WHERE sd.player_id = :player_id
+            ORDER BY sd.scrape_date DESC
+            LIMIT 1
+        """
+        with get_session() as session:
+            result = session.execute(
+                sqla.text(sql), {"player_id": player_id}
+            ).fetchone()
 
-    def get_latest_record_for_many_players(
-        self,
-        players: list[int],
-    ) -> list[HiscoreRecord]: ...
+        if not result:
+            return None
 
-    def get_all_records_for_player(
-        self,
-        player_id: int,
-    ) -> list[HiscoreRecord]: ...
+        skills = SkillsRecord()
+        activities = ActivitiesRecord()
 
-    def get_all_records_for_many_players(
-        self,
-        players: list[int],
-    ) -> list[HiscoreRecord]: ...
+        # Set skills and activities dynamically
+        for row in result:
+            skill_name, skill_value, activity_name, activity_value = (
+                row["skill_name"],
+                row["skill_value"],
+                row["activity_name"],
+                row["activity_value"],
+            )
+            if skill_name:
+                setattr(skills, skill_name, skill_value)
+            if activity_name:
+                setattr(activities, activity_name, activity_value)
+
+        return HiscoreRecord(
+            scrape_ts=result["scrape_ts"],
+            scrape_date=result["scrape_date"],
+            player_id=result["player_id"],
+            skills=skills,
+            activities=activities,
+        )
+
+
+def get_latest_record_for_many_players(players: list[int]) -> list[HiscoreRecord]:
+    placeholders = ", ".join([":player_id_" + str(i) for i in range(len(players))])
+    sql = f"""
+        SELECT sd.scrape_ts, sd.scrape_date, sd.player_id,
+               s.skill_name, ps.skill_value,
+               a.activity_name, pa.activity_value
+        FROM scraper_data sd
+        LEFT JOIN scraper_player_skill sps ON sd.scrape_id = sps.scrape_id
+        LEFT JOIN player_skill ps ON sps.player_skill_id = ps.player_skill_id
+        LEFT JOIN skill s ON ps.skill_id = s.skill_id
+        LEFT JOIN scraper_player_activity spa ON sd.scrape_id = spa.scrape_id
+        LEFT JOIN player_activity pa ON spa.player_activity_id = pa.player_activity_id
+        LEFT JOIN activity a ON pa.activity_id = a.activity_id
+        WHERE sd.player_id IN ({placeholders})
+        ORDER BY sd.scrape_date DESC
+    """
+
+    params = {f"player_id_{i}": player_id for i, player_id in enumerate(players)}
+    results = session.execute(text(sql), params).fetchall()
+
+    records = []
+    for result in results:
+        skills = SkillsRecord()
+        activities = ActivitiesRecord()
+
+        for row in result:
+            skill_name, skill_value, activity_name, activity_value = (
+                row["skill_name"],
+                row["skill_value"],
+                row["activity_name"],
+                row["activity_value"],
+            )
+            if skill_name:
+                setattr(skills, skill_name, skill_value)
+            if activity_name:
+                setattr(activities, activity_name, activity_value)
+
+        records.append(
+            HiscoreRecord(
+                scrape_ts=result["scrape_ts"],
+                scrape_date=result["scrape_date"],
+                player_id=result["player_id"],
+                skills=skills,
+                activities=activities,
+            )
+        )
+
+    return records
+
+
+def get_all_records_for_player(player_id: int) -> list[HiscoreRecord]:
+    sql = """
+        SELECT sd.scrape_ts, sd.scrape_date, sd.player_id,
+               s.skill_name, ps.skill_value,
+               a.activity_name, pa.activity_value
+        FROM scraper_data sd
+        LEFT JOIN scraper_player_skill sps ON sd.scrape_id = sps.scrape_id
+        LEFT JOIN player_skill ps ON sps.player_skill_id = ps.player_skill_id
+        LEFT JOIN skill s ON ps.skill_id = s.skill_id
+        LEFT JOIN scraper_player_activity spa ON sd.scrape_id = spa.scrape_id
+        LEFT JOIN player_activity pa ON spa.player_activity_id = pa.player_activity_id
+        LEFT JOIN activity a ON pa.activity_id = a.activity_id
+        WHERE sd.player_id = :player_id
+        ORDER BY sd.scrape_date DESC
+    """
+    results = session.execute(text(sql), {"player_id": player_id}).fetchall()
+
+    records = []
+    for result in results:
+        skills = SkillsRecord()
+        activities = ActivitiesRecord()
+
+        for row in result:
+            skill_name, skill_value, activity_name, activity_value = (
+                row["skill_name"],
+                row["skill_value"],
+                row["activity_name"],
+                row["activity_value"],
+            )
+            if skill_name:
+                setattr(skills, skill_name, skill_value)
+            if activity_name:
+                setattr(activities, activity_name, activity_value)
+
+        records.append(
+            HiscoreRecord(
+                scrape_ts=result["scrape_ts"],
+                scrape_date=result["scrape_date"],
+                player_id=result["player_id"],
+                skills=skills,
+                activities=activities,
+            )
+        )
+
+    return records
+
+
+def get_all_records_for_many_players(players: list[int]) -> list[HiscoreRecord]:
+    placeholders = ", ".join([":player_id_" + str(i) for i in range(len(players))])
+    sql = f"""
+        SELECT sd.scrape_ts, sd.scrape_date, sd.player_id,
+               s.skill_name, ps.skill_value,
+               a.activity_name, pa.activity_value
+        FROM scraper_data sd
+        LEFT JOIN scraper_player_skill sps ON sd.scrape_id = sps.scrape_id
+        LEFT JOIN player_skill ps ON sps.player_skill_id = ps.player_skill_id
+        LEFT JOIN skill s ON ps.skill_id = s.skill_id
+        LEFT JOIN scraper_player_activity spa ON sd.scrape_id = spa.scrape_id
+        LEFT JOIN player_activity pa ON spa.player_activity_id = pa.player_activity_id
+        LEFT JOIN activity a ON pa.activity_id = a.activity_id
+        WHERE sd.player_id IN ({placeholders})
+        ORDER BY sd.scrape_date DESC
+    """
+
+    params = {f"player_id_{i}": player_id for i, player_id in enumerate(players)}
+    results = session.execute(text(sql), params).fetchall()
+
+    records = []
+    for result in results:
+        skills = SkillsRecord()
+        activities = ActivitiesRecord()
+
+        for row in result:
+            skill_name, skill_value, activity_name, activity_value = (
+                row["skill_name"],
+                row["skill_value"],
+                row["activity_name"],
+                row["activity_value"],
+            )
+            if skill_name:
+                setattr(skills, skill_name, skill_value)
+            if activity_name:
+                setattr(activities, activity_name, activity_value)
+
+        records.append(
+            HiscoreRecord(
+                scrape_ts=result["scrape_ts"],
+                scrape_date=result["scrape_date"],
+                player_id=result["player_id"],
+                skills=skills,
+                activities=activities,
+            )
+        )
+
+    return records

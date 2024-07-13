@@ -46,11 +46,16 @@ def create_test_batch(
 
         earliest_record = records.pop(-1)
 
+        _skills = {}
         skills = SkillsRecord()
         skills.random()
+        _skills = {k: v for k, v in skills.__dict__.items() if v}
+        # print(f"random: {_skills=}")
 
         activities = ActivitiesRecord()
         activities.random()
+        _activities = {k: v for k, v in activities.__dict__.items() if v}
+        # print(f"random :{_activities=}")
 
         record = HiscoreRecord(
             scrape_ts=earliest_record,
@@ -77,6 +82,9 @@ def test_e2e():
     bench = bench()
 
     test_data = create_test_data(len_players=1_000)
-    for _ in range(1000):
+    print(f"{len(test_data)=}")
+    for i in range(1000):
+        if i % 10 == 0:
+            print(i, len(test_data))
         batch = create_test_batch(data=test_data, batch_size=10)
         bench.insert_many_records(records=batch)

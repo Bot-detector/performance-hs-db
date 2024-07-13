@@ -29,7 +29,7 @@ class SkillsRecord:
     hunter: int = None
     construction: int = None
 
-    def __yield_gauss(self, mu, sigma, min_value, max_value, rounded: int = 1_000):
+    def __yield_gauss(self, mu, sigma, min_value, max_value, rounded: int = 10):
         while True:
             num = int(round(random.gauss(mu, sigma), 0))
             # yield min value if lower
@@ -54,15 +54,15 @@ class SkillsRecord:
 
     def random(self):
         mlen = len(self.__dataclass_fields__)
-        fields = self.__random_keys(mu=5, sigma=5, min_value=0, max_value=mlen)
+        fields = self.__random_keys(mu=5, sigma=5, min_value=1, max_value=mlen)
         gauss_gen = self.__yield_gauss(
-            mu=3_301_035,  # Average OSRS skill exp (e.g., attack, defence, etc.)
-            sigma=8_560_358,  # Standard deviation for skill exp
+            mu=3_301,  # Average OSRS skill exp (e.g., attack, defence, etc.)
+            sigma=8_560,  # Standard deviation for skill exp
             min_value=0,  # Minimum possible skill exp
-            max_value=200_000_000,  # Maximum possible skill exp
+            max_value=200_000,  # Maximum possible skill exp
         )
         for _field in fields:
-            value = int(next(gauss_gen))
+            value = int(next(gauss_gen)) * 1000
             setattr(self, _field, value)
 
 
@@ -165,7 +165,7 @@ class ActivitiesRecord:
 
     def random(self):
         mlen = len(self.__dataclass_fields__)
-        fields = self.__random_keys(mu=5, sigma=5, min_value=0, max_value=mlen)
+        fields = self.__random_keys(mu=5, sigma=5, min_value=1, max_value=mlen)
         gauss_gen = self.__yield_gauss(
             mu=48,  # Average OSRS activity score (e.g., league, bounty_hunter_hunter, etc.)
             sigma=270,  # Standard deviation for activity score

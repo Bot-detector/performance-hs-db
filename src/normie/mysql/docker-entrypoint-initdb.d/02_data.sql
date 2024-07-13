@@ -1,12 +1,12 @@
 USE playerdata;
-INSERT INTO skills (skill_name) VALUES
+INSERT INTO skill (skill_name) VALUES
 ('attack'), ('defence'), ('strength'), ('hitpoints'), ('ranged'), ('prayer'),
 ('magic'), ('cooking'), ('woodcutting'), ('fletching'), ('fishing'), ('firemaking'),
 ('crafting'), ('smithing'), ('mining'), ('herblore'), ('agility'), ('thieving'),
 ('slayer'), ('farming'), ('runecraft'), ('hunter'), ('construction')
 ;
 
-INSERT INTO activities (activity_name) VALUES
+INSERT INTO activity (activity_name) VALUES
 ('league'), ('bounty_hunter_hunter'), ('bounty_hunter_rogue'), ('cs_all'), ('cs_beginner'),
 ('cs_easy'), ('cs_medium'), ('cs_hard'), ('cs_elite'), ('cs_master'), ('lms_rank'),
 ('soul_wars_zeal'), ('abyssal_sire'), ('alchemical_hydra'), ('barrows_chests'), ('bryophyta'),
