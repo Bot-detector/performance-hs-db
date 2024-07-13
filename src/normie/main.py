@@ -332,197 +332,94 @@ class BenchMark(BenchmarkABC):
             )
             session.commit()
 
-    def get_latest_record_for_player(player_id: int) -> HiscoreRecord:
+    def get_latest_record_for_player(
+        self,
+        player_id: int,
+    ) -> HiscoreRecord:
         sql = """
-            SELECT sd.scrape_ts, sd.scrape_date, sd.player_id,
-                s.skill_name, ps.skill_value,
-                a.activity_name, pa.activity_value
+            SELECT 
+                sd.scrape_date, sd.scrape_ts,
+                sk.skill_name, ps.skill_value
             FROM scraper_data sd
-            LEFT JOIN scraper_player_skill sps ON sd.scrape_id = sps.scrape_id
-            LEFT JOIN player_skill ps ON sps.player_skill_id = ps.player_skill_id
-            LEFT JOIN skill s ON ps.skill_id = s.skill_id
-            LEFT JOIN scraper_player_activity spa ON sd.scrape_id = spa.scrape_id
-            LEFT JOIN player_activity pa ON spa.player_activity_id = pa.player_activity_id
-            LEFT JOIN activity a ON pa.activity_id = a.activity_id
-            WHERE sd.player_id = :player_id
-            ORDER BY sd.scrape_date DESC
-            LIMIT 1
+            JOIN scraper_player_skill sps ON sps.scrape_id = sd.scrape_id
+            JOIN player_skill ps ON sps.player_skill_id = ps.player_skill_id
+            JOIN skill sk on ps.skill_id = sk.skill_id
+            WHERE 1
+                AND sd.scrape_id = (
+                    SELECT 
+                        scrape_id 
+                    from scraper_data
+                    WHERE player_id = :player_id
+                    ORDER BY scrape_date DESC
+                    LIMIT 1
+                )
         """
         with get_session() as session:
-            result = session.execute(
-                sqla.text(sql), {"player_id": player_id}
-            ).fetchone()
+            result = session.execute(sqla.text(sql), params={"player_id": player_id})
+            session.commit()
+        return result.first()
 
-        if not result:
-            return None
+    def get_latest_record_for_many_players(
+        self,
+        players: list[int],
+    ) -> list[HiscoreRecord]:
+        sql = """
+            SELECT 
+                sd.scrape_date, sd.scrape_ts, sd.player_id,
+                sk.skill_name, 
+                ps.skill_value
+            FROM scraper_data sd
+            JOIN scraper_player_skill sps ON sps.scrape_id = sd.scrape_id
+            JOIN player_skill ps ON sps.player_skill_id = ps.player_skill_id
+            JOIN skill sk on ps.skill_id = sk.skill_id
+            JOIN (
+                SELECT 
+                    player_id, MAX(scrape_date) max_sd
+                FROM scraper_data
+                WHERE player_id IN :players
+                GROUP BY player_id
+            ) a ON sd.player_id = a.player_id AND sd.scrape_date = a.max_sd
+        """
+        with get_session() as session:
+            result = session.execute(sqla.text(sql), params={"players": players})
+        return [r._mapping for r in result.fetchall()]
 
-        skills = SkillsRecord()
-        activities = ActivitiesRecord()
+    def get_all_records_for_player(
+        self,
+        player_id: int,
+    ) -> list[HiscoreRecord]:
+        sql = """
+            SELECT 
+                sd.scrape_date, sd.scrape_ts, sd.player_id,
+                sk.skill_name, 
+                ps.skill_value
+            FROM scraper_data sd
+            JOIN scraper_player_skill sps ON sps.scrape_id = sd.scrape_id
+            JOIN player_skill ps ON sps.player_skill_id = ps.player_skill_id
+            JOIN skill sk on ps.skill_id = sk.skill_id
+            WHERE 1
+                AND sd.player_id = :player_id
+        """
+        with get_session() as session:
+            result = session.execute(sqla.text(sql), params={"player_id": player_id})
+        return [r._mapping for r in result.fetchall()]
 
-        # Set skills and activities dynamically
-        for row in result:
-            skill_name, skill_value, activity_name, activity_value = (
-                row["skill_name"],
-                row["skill_value"],
-                row["activity_name"],
-                row["activity_value"],
-            )
-            if skill_name:
-                setattr(skills, skill_name, skill_value)
-            if activity_name:
-                setattr(activities, activity_name, activity_value)
-
-        return HiscoreRecord(
-            scrape_ts=result["scrape_ts"],
-            scrape_date=result["scrape_date"],
-            player_id=result["player_id"],
-            skills=skills,
-            activities=activities,
-        )
-
-
-def get_latest_record_for_many_players(players: list[int]) -> list[HiscoreRecord]:
-    placeholders = ", ".join([":player_id_" + str(i) for i in range(len(players))])
-    sql = f"""
-        SELECT sd.scrape_ts, sd.scrape_date, sd.player_id,
-               s.skill_name, ps.skill_value,
-               a.activity_name, pa.activity_value
-        FROM scraper_data sd
-        LEFT JOIN scraper_player_skill sps ON sd.scrape_id = sps.scrape_id
-        LEFT JOIN player_skill ps ON sps.player_skill_id = ps.player_skill_id
-        LEFT JOIN skill s ON ps.skill_id = s.skill_id
-        LEFT JOIN scraper_player_activity spa ON sd.scrape_id = spa.scrape_id
-        LEFT JOIN player_activity pa ON spa.player_activity_id = pa.player_activity_id
-        LEFT JOIN activity a ON pa.activity_id = a.activity_id
-        WHERE sd.player_id IN ({placeholders})
-        ORDER BY sd.scrape_date DESC
-    """
-
-    params = {f"player_id_{i}": player_id for i, player_id in enumerate(players)}
-    results = session.execute(text(sql), params).fetchall()
-
-    records = []
-    for result in results:
-        skills = SkillsRecord()
-        activities = ActivitiesRecord()
-
-        for row in result:
-            skill_name, skill_value, activity_name, activity_value = (
-                row["skill_name"],
-                row["skill_value"],
-                row["activity_name"],
-                row["activity_value"],
-            )
-            if skill_name:
-                setattr(skills, skill_name, skill_value)
-            if activity_name:
-                setattr(activities, activity_name, activity_value)
-
-        records.append(
-            HiscoreRecord(
-                scrape_ts=result["scrape_ts"],
-                scrape_date=result["scrape_date"],
-                player_id=result["player_id"],
-                skills=skills,
-                activities=activities,
-            )
-        )
-
-    return records
-
-
-def get_all_records_for_player(player_id: int) -> list[HiscoreRecord]:
-    sql = """
-        SELECT sd.scrape_ts, sd.scrape_date, sd.player_id,
-               s.skill_name, ps.skill_value,
-               a.activity_name, pa.activity_value
-        FROM scraper_data sd
-        LEFT JOIN scraper_player_skill sps ON sd.scrape_id = sps.scrape_id
-        LEFT JOIN player_skill ps ON sps.player_skill_id = ps.player_skill_id
-        LEFT JOIN skill s ON ps.skill_id = s.skill_id
-        LEFT JOIN scraper_player_activity spa ON sd.scrape_id = spa.scrape_id
-        LEFT JOIN player_activity pa ON spa.player_activity_id = pa.player_activity_id
-        LEFT JOIN activity a ON pa.activity_id = a.activity_id
-        WHERE sd.player_id = :player_id
-        ORDER BY sd.scrape_date DESC
-    """
-    results = session.execute(text(sql), {"player_id": player_id}).fetchall()
-
-    records = []
-    for result in results:
-        skills = SkillsRecord()
-        activities = ActivitiesRecord()
-
-        for row in result:
-            skill_name, skill_value, activity_name, activity_value = (
-                row["skill_name"],
-                row["skill_value"],
-                row["activity_name"],
-                row["activity_value"],
-            )
-            if skill_name:
-                setattr(skills, skill_name, skill_value)
-            if activity_name:
-                setattr(activities, activity_name, activity_value)
-
-        records.append(
-            HiscoreRecord(
-                scrape_ts=result["scrape_ts"],
-                scrape_date=result["scrape_date"],
-                player_id=result["player_id"],
-                skills=skills,
-                activities=activities,
-            )
-        )
-
-    return records
-
-
-def get_all_records_for_many_players(players: list[int]) -> list[HiscoreRecord]:
-    placeholders = ", ".join([":player_id_" + str(i) for i in range(len(players))])
-    sql = f"""
-        SELECT sd.scrape_ts, sd.scrape_date, sd.player_id,
-               s.skill_name, ps.skill_value,
-               a.activity_name, pa.activity_value
-        FROM scraper_data sd
-        LEFT JOIN scraper_player_skill sps ON sd.scrape_id = sps.scrape_id
-        LEFT JOIN player_skill ps ON sps.player_skill_id = ps.player_skill_id
-        LEFT JOIN skill s ON ps.skill_id = s.skill_id
-        LEFT JOIN scraper_player_activity spa ON sd.scrape_id = spa.scrape_id
-        LEFT JOIN player_activity pa ON spa.player_activity_id = pa.player_activity_id
-        LEFT JOIN activity a ON pa.activity_id = a.activity_id
-        WHERE sd.player_id IN ({placeholders})
-        ORDER BY sd.scrape_date DESC
-    """
-
-    params = {f"player_id_{i}": player_id for i, player_id in enumerate(players)}
-    results = session.execute(text(sql), params).fetchall()
-
-    records = []
-    for result in results:
-        skills = SkillsRecord()
-        activities = ActivitiesRecord()
-
-        for row in result:
-            skill_name, skill_value, activity_name, activity_value = (
-                row["skill_name"],
-                row["skill_value"],
-                row["activity_name"],
-                row["activity_value"],
-            )
-            if skill_name:
-                setattr(skills, skill_name, skill_value)
-            if activity_name:
-                setattr(activities, activity_name, activity_value)
-
-        records.append(
-            HiscoreRecord(
-                scrape_ts=result["scrape_ts"],
-                scrape_date=result["scrape_date"],
-                player_id=result["player_id"],
-                skills=skills,
-                activities=activities,
-            )
-        )
-
-    return records
+    def get_all_records_for_many_players(
+        self,
+        players: list[int],
+    ) -> list[HiscoreRecord]:
+        sql = """
+            SELECT 
+                sd.scrape_date, sd.scrape_ts, sd.player_id,
+                sk.skill_name, 
+                ps.skill_value
+            FROM scraper_data sd
+            JOIN scraper_player_skill sps ON sps.scrape_id = sd.scrape_id
+            JOIN player_skill ps ON sps.player_skill_id = ps.player_skill_id
+            JOIN skill sk on ps.skill_id = sk.skill_id
+            WHERE 1
+                AND sd.player_id IN :players
+        """
+        with get_session() as session:
+            result = session.execute(sqla.text(sql), params={"players": players})
+        return [r._mapping for r in result.fetchall()]
