@@ -83,6 +83,7 @@ def insert_data(
     batch_size: int,
     iterations: int,
     players: set,
+    active: bool = True,
 ):
     for i in range(iterations):
         batch = batch_data(data=data, batch_size=batch_size)
@@ -90,8 +91,10 @@ def insert_data(
         start_time = time.time()
         bench.insert_many_records(records=batch)
         duration = int((time.time() - start_time) * 1000)
-        metrics.add(f"test_insert_duration_ms_{batch_size}", duration)
-        metrics.add(f"test_insert_{batch_size}", i * batch_size)
+
+        if active:
+            metrics.add(f"test_insert_duration_ms_{batch_size}", duration)
+            metrics.add(f"test_insert_{batch_size}", i * batch_size)
 
         if i * batch_size % 1000 == 0:
             print(f"{i=}, inserted: {i*batch_size}, players left: {len(data)}")
@@ -217,7 +220,27 @@ if __name__ == "__main__":
 
     data = create_test_data(len_players=LEN_PLAYERS)
     players = set()
-    batches = [(100_000, 1), (10, 10_000), (100, 1000), (1_000, 100), (10_000, 10)]
+
+    print(f"{len(players)=}, init 200k rows")
+    players = insert_data(
+        bench=benchmark,
+        metrics=metrics,
+        data=data,
+        batch_size=200_000,
+        iterations=1,
+        players=players,
+        active=False,
+    )
+    # [(batch_size, iterations)]
+    batches = [
+        (100, 1000),
+        (500, 200),
+        (1_000, 100),
+        (2_000, 50),
+        (4_000, 25),
+        (10_000, 10),
+        (20_000, 5),
+    ]
     for batch_size, iterations in batches:
         print(f"{len(players)=}, {batch_size=}, {iterations=}")
         players = insert_data(

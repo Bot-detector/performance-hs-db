@@ -78,14 +78,14 @@ docker-benchmark-all: docker-down ## Stop all containers in src folders and test
 	@for dir in src/*/ ; do \
 		if [ -f "$${dir}docker-compose.yml" ]; then \
 			echo "Starting Docker containers in $${dir}..." ; \
-			docker compose -f "$${dir}docker-compose.yml" up -d ; \
 			dir_name=$$(basename "$${dir}") ; \
 			for i in 1 2 3; do \
+				docker compose -f "$${dir}docker-compose.yml" up -d ; \
 				echo "Running performance test $${i} for $${dir_name}..." ; \
 				implementation=$${dir_name} python3 performance_test/main.py ; \
+				docker compose -f "$${dir}docker-compose.yml" down ; \
 			done ; \
 			echo "Stopping Docker containers in $${dir}..." ; \
-			docker compose -f "$${dir}docker-compose.yml" down ; \
 		fi \
 	done
 	
