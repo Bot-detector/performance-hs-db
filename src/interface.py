@@ -20,6 +20,26 @@ class BenchmarkABC(ABC):
             data = result.fetchall()
         return data
 
+    def get_io(self):
+        query = text(
+            """
+            SELECT
+                tsio.table_schema,
+                sum(tsio.sum_number_of_bytes_read) as bytes_read,
+                sum(tsio.sum_number_of_bytes_write) as bytes_write
+            FROM
+                sys.x$ps_schema_table_statistics_io tsio
+            where
+                tsio.table_schema = :database
+            GROUP BY tsio.table_schema;
+            """
+        )
+        with get_session() as session:
+            session.execute(text("use sys;"))
+            result = session.execute(query, params={"database": "playerdata"})
+            data = result.mappings().fetchall()
+        return data
+
     @abstractmethod
     def insert_many_records(self, records: list[HiscoreRecord]) -> None:
         """

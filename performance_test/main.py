@@ -115,6 +115,15 @@ def get_total_size(bench: BenchmarkABC, metrics: Metrics):
     return
 
 
+def get_total_io(bench: BenchmarkABC, metrics: Metrics):
+    io_data = bench.get_io()
+    for io in io_data:
+        print(io)
+        metrics.add(f"{io.get('table_schema')}_bytes_read", io.get("bytes_read"))
+        metrics.add(f"{io.get('table_schema')}_bytes_write", io.get("bytes_write"))
+    return
+
+
 def get_all_records(
     bench: BenchmarkABC,
     metrics: Metrics,
@@ -279,4 +288,5 @@ if __name__ == "__main__":
         iterations=100,
         batch_size=5000,
     )
+    get_total_io(bench=benchmark, metrics=metrics)
     metrics_to_file(metrics=metrics)

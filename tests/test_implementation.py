@@ -88,3 +88,14 @@ def test_e2e():
             print(i, len(test_data))
         batch = create_test_batch(data=test_data, batch_size=10)
         bench.insert_many_records(records=batch)
+
+
+def test_io():
+    implementation = os.environ.get("implementation")
+    if not implementation:
+        implementation = input("implementation: ")
+
+    module = importlib.import_module(f"src.{implementation}.main")
+    bench: BenchmarkABC = getattr(module, "BenchMark")
+    bench = bench()
+    print(bench.get_io())
