@@ -119,8 +119,12 @@ def get_total_io(bench: BenchmarkABC, metrics: Metrics):
     io_data = bench.get_io()
     for io in io_data:
         print(io)
-        metrics.add(f"{io.get('table_schema')}_bytes_read", io.get("bytes_read"))
-        metrics.add(f"{io.get('table_schema')}_bytes_write", io.get("bytes_write"))
+        bytes_read, bytes_write = (
+            float(io.get("bytes_read")),
+            float(io.get("bytes_write")),
+        )
+        metrics.add(f"{io.get('table_schema')}_bytes_read", bytes_read)
+        metrics.add(f"{io.get('table_schema')}_bytes_write", bytes_write)
     return
 
 
@@ -207,7 +211,7 @@ def get_latest_record_batch(
             break
 
         start_time = time.time()
-        x = bench.get_latest_record_for_many_players(players=batch)
+        _ = bench.get_latest_record_for_many_players(players=batch)
         duration = int((time.time() - start_time) * 1000)
         metrics.add("get_latest_record_batch", i)
         metrics.add(f"get_latest_record_batch_duration_ms_{batch_size}", duration)
